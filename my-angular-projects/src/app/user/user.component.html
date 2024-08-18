@@ -1,0 +1,42 @@
+<!-- <div> -->
+  <app-card>
+  <button (click)="onSelectUser()" [class.active]="isSelected">
+    <!-- We can add the click events in above format
+      make sure this event will only call when you click on the button. 
+      However we are invoking a function here but that function will not call when this element will rendered or parse but it gets call when we perform click event button.
+    -->
+    <!-- <img src="assets/users/{{ selectedUser.avatar }}" alt="{{selectedUser.name}}" /> Not recommended-->
+    
+    <!-- <img [src]="imagePath" [alt]="selectedUser.name" /> -->
+    
+    
+    
+    
+    <!-- Created a "imagPath getter to calculate the computation inside ts file. This is the best practice to keep only variables/properties inside templates and computation which requires to map the result 
+       to these properties should be handle inside component.ts file. In our case we have move the "image path concatenation inside the ts file"
+    " -->
+    
+    
+    
+    <!-- <span>{{
+      selectedUser.name
+    }}</span> -->
+
+    <!-- Using Signals -->
+
+    <!-- <img [src]="imagePath()" [alt]="selectedUser().name" />
+     <span>{{selectedUser().name}}</span> -->
+
+
+
+     <img  [src]="imgPath" [alt]="user.name"/>
+    <span>{{user.name}}</span>
+
+
+    <!-- Using Input signals -->
+
+    <!-- <img  [src]="imgPath()" [alt]="name()"/>
+    <span>{{name()}}</span> -->
+  </button>
+</app-card>
+<!-- </div> -->
