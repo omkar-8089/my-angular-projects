@@ -1129,6 +1129,298 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // Local Storage
+
+--> Kindly google about the  local storage and its working
+
+--> Reference 
+https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+******** Angular Essentials --> Working with Modules **********************************************************************************************************************************************************
+
+
+--- IN  previous section we learned a lot about the different features of the Angular.
+--- Also we build the different components and added different functionalities to them.
+--- However the component's that built are the standalone components .
+--- In previous versions of angular prior to Angular 13 , the projects were build on "Module based component".
+--- Though we can still built the "Module Based " components.
+--- Now, in this section, we are basically planning to Migrate our "Standalone Component" based into "Module based components".
+--- Here basically we will be covering below details.
+
+    1) Migrating App to Module Based components from Standalone components.
+    2) Use "Module Base Component" as Root component i.e Bootstrap component.
+    3 Use combination of both Module Based and Standalone components.
+    4) Use Standalone components in Module Base components.
+    5) Shared Modules (Shared Module functionalities).
+
+
+// Introduction Angular Modules (NgModules)
+
+
+--- An Angular module is defined using the @NgModule decorator and typically contains components, services, directives, and pipes that are logically related.
+--- Module-based components refer to components that are declared within an Angular module. These components are encapsulated and can be reused within the module or shared with other modules.
+--- When in standalone components, we are basically adding other components inside an "imports" to register those components so that we can use these components into that component.
+--- While in Module base architecture, we can simply "declares" or register these components at module level, so that we can use them inside that module or shared with other modules.
+--- The advantage of the "Standalone" components is that you are aware that , which component is using inside your component. Which can be easily recognizable due to "imports" array.
+--- While in  Modules, all the components are assembles to use .
+
+--- We can create "Root module" , "Shared Modules" and "Feature Modules".
+
+    --> 1) Root Module:
+
+    --- Every Angular application has at least one module, known as the root module (often named AppModule).
+    --- The root module bootstraps the application.
+    
+    --> 2) Feature Modules:
+
+    --- Angular applications can have multiple feature modules that encapsulate related components, services, directives, and pipes.
+    --- Feature modules help in organizing the application into smaller, more manageable parts.
+    
+    --> 3) Shared Modules:
+
+    --- A shared module is designed to contain reusable components, directives, and pipes that can be used across different modules in the application.
+    --- Typically, shared modules are imported into other feature modules to avoid duplicating code.
+
+
+--- AS mentioned at the beginning  of this section, we will be migrating our existing standalone app into Module Based components and Mix-match of both of them.
+
+
+// Creating Root Module
+
+--- Here we are creating an root module, basically a module that will get considered root which will configure the root component as well.
+--- So here, first we need to create an "module" , name  "appModule."
+--- Basically it is class like component class but we can make that class as a "Module", by adding "@NgModule" decorator.
+--- This  "@NgModule" decorators make the class as Module. It accepts certain properties like "declarations", "imports", "bootstraps", "exports" , "providers" and so on ..
+--- Now our goal is to make "standalone" "AppComponent" as "Module baseComponent".
+
+--- For that firstly, we will need import the "AppComponent" and needs to register it inside a "declarations" array.
+--- So that Angular will understand that we are planning to use this component.
+
+--- During this you will face an below error.
+
+    // Code snippet
+
+    --> App Module
+
+    import { NgModule } from "@angular/core";
+        import { AppComponent } from "./app.component";
+
+        @NgModule({
+            declarations: [ AppComponent ]
+            // Error -> Component AppComponent is standalone, and cannot be declared in an NgModule. Did you mean to import it instead?
+        })
+
+        export class AppModule {}
+
+--- This error is telling that "AppComponent" is an "standalone" component, you cannot use it inside a declarations.
+--- TO Resolve this error we have to "remove ""standalone: true" property from "AppComponent's" decorator, or we can make it  "standalone:false".
+--- Now the error from "AppModule" will get resolve.
+--- However now we have made our "AppComponent" as Module Based component so we will face an below error.
+
+
+
+            @Component({
+            selector: 'app-root',
+            // standalone: true, // You can remove or make "standalone: false"
+            imports: [RouterOutlet, HeaderComponent, UserComponent, TasksComponent, CommonModule],
+            // Error on this "imports" --> 'imports' is only valid on a component that is standalone.(-992010) app.component.ts(17, 14): Did you forget to add 'standalone: true' to this @Component?
+            templateUrl: './app.component.html',
+            styleUrl: './app.component.scss'
+            })
+            export class AppComponent {
+            }
+
+--- To Resolve above error, we will remove imports from "AppComponent", because it is no more stand alone component.
+--> Note --> If you are making "standalone" component to "non-standalone" component, also remove "imports" from component decorator configuration.
+    --> Since it does not require for "non-standalone components."
+
+
+--- So now the next is to register our "AppModule" as Bootstrap module.
+--- To do that we need to modify the code from "main.ts".
+--- Refer to the code snippet below for a reference.
+
+        // Code snippet
+
+
+        import { bootstrapApplication } from '@angular/platform-browser';
+        import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+        import { appConfig } from './app/app.config';
+        import { AppComponent } from './app/app.component';
+        import { AppModule } from './app/app.module';
+
+        // bootstrapApplication(AppComponent, appConfig)
+        // .catch((err) => console.error(err));  
+        ..//// This code is when "AppComponent is root and standalone component and we need to make it as bootstrap component"
+
+
+
+        platformBrowserDynamic().bootstrapModule(AppModule).then(() => {})
+        // Here we can "specify" AppModule as a bootstrap module.
+        // This line of code will load the "AppModule" as a first module when user visits the application.
+
+
+--- Now here, we have specify the "bootstrap" module.
+--- After this we need to specify which component that needs to considered as  "bootstrap component" when the "AppModule gets loaded".
+
+--- To achieve this we need to specify that component name in "bootstrap" array inside "@NgModule" decorators.
+--- We can add "bootstrap" property inside "@NgModule of the "root module"", i.e inside the "AppModule" in our case. 
+--- Refer to the below code snippet for reference.
+
+        // Code snippet
+
+        --> App Module
+
+        import { NgModule } from "@angular/core";
+        import { AppComponent } from "./app.component";
+
+        @NgModule({
+            declarations: [ AppComponent ],
+            bootstrap: [AppComponent ]
+        })
+
+        export class AppModule {}
+
+--- "bootstrap" property can accepts an array of a components which needs to be bootstrap.
+--- Typically we only provide a "one component as bootstrap component because we need to adhere the "component tree"".
+--> Note --> "bootstrap" property is only Available to Module which is register inside main.ts as a "bootstrap module."
+--> Note --> Basically we can specify "bootstrap" property to any module, however that module we need to register in main.ts. Then only component that we have specified in "bootstrap" will get loaded.
+    --> "Also the selector of "Bootstrap" component needs to be present in index.html"
+
+// Add "StandAlone components inside a Module"
+
+--- Now in our "appComponent", we are using "HeaderComponent, UserComponent, TasksComponent".
+--- These are the standalone components and we have made our AppComponent as module base component. And we also saw the error that we got in the "imports" of app component.
+--- To make the app workable,  "Either we can make all these components as Module based components or "We can import these components inside a "AppModule""".
+--- Because somehow we will need to register these components to tell angular then only we can use them inside an AppComponent.
+--- By importing "Standalone components inside AppModule", we can achieve the case to use "Standalone components inside A Module ".
+--> Note --> we cannot include the "standalone components inside "declaration part" --> WE can only add "non-standalone components inside a declaration part of Module""
+--> Note --> Also to make app running and executing successfully you have to include "BrowserModule" inside the imports array of AppModule.
+--- BrowserModule is a critical Angular module that is essential for running an Angular application in a web browser.
+--- WE can make the use of built-in directives and many other things due to this module.
+
+
+// Using Modules inside a Standalone component.
+
+--- In previous section, we saw that how can we add the standalone components inside a module.
+--- However we can also add the modules inside a standalone components.
+--- In fact, we have already did that in a one of the standalone component.
+--- "We have imported "FormsModule"" in NewTaskComponent.
+--- We also know that "FormsModule" plays an important role while dealing Two-Way data bindings, Directives and so on...
+--- Kindly find the below code  for a reference.
+
+    // Code snippet 
+
+        @Component({
+        selector: 'app-new-task',
+        standalone: true,
+        imports: [FormsModule],
+        templateUrl: './new-task.component.html',
+        styleUrl: './new-task.component.scss',
+        })
+        export class NewTaskComponent {
+
+// Creating shared module
+
+--- Sometimes we creates some generic shared components , which we need to be used across app.
+--- These components are not related to specific module but they are some reusable components which can leverage across the app.
+--- Hence we are creating such "SharedModule" in this section.
+--- Kindly refer to the below code a for a reference.
+
+
+    // Code snippet
+
+    import { NgModule } from "@angular/core";
+    import { CardComponent } from "./card/card.component";
+
+    @NgModule({
+        declarations: [CardComponent],
+        exports: [CardComponent]
+    })
+
+    export class SharedModule {}
+
+    --- Here, we need to specify the "Shared components" in the declarations as well as "exports" array.
+    --- By adding them "exports" we are making these components  available to other modules for use.
+    --- After this we need to register this "sharedModule", so that Angular should know about this else we will not be able make the use of it.
+
+    --- PLease find the below code for registering the SharedModule
+
+    // Code Snippet (AppModule.ts)
+
+            @NgModule({
+            declarations: [ AppComponent , HeaderComponent, UserComponent, TasksComponent, NewTaskComponent, TaskComponent],
+            imports: [BrowserModule, FormsModule, SharedModule],
+            bootstrap: [AppComponent ]
+            })
+
+        export class  AppModule {}
+
+
+    --- Here, we are adding "sharedModule" in the "imports" array.
+    --> By  adding "sharedModule" in the "imports" array will "merge the "exports" components from  SharedModule into the "declarations" array of AppModule behind the scenes."
+    --- This way the components from sharedModule gets available to the all the components from the AppModule.
+    --- We can do this other modules as well, means if we add sharedModule to "Feature Module" rather than AppMOdule then by doing above process the components from SharedModule will get available to 
+        --- the components from that Feature Module.
+
+// Creating Feature Module,
+
+--- In previous sections, we learned about how to create the "root module and shared module."
+--- In this section, we will learned how to create feature module.
+--- In real world project, we usually works on the different feature which pertains different business cases.
+--- So to achieve , we divide our application into the different modules.
+--- Let's refer to below code snippet, where we are creating "Task  Module" which will containing Tasks Related functionality.
+
+
+    // Code snippet (TasksModule.ts)
+
+
+        import { NgModule } from "@angular/core";
+        import { NewTaskComponent } from "./new-task/new-task.component";
+        import { TaskComponent } from "./task/task.component";
+        import { TasksComponent } from "./tasks.component";
+
+        @NgModule({
+            declarations:[TasksComponent, NewTaskComponent, TaskComponent],
+            exports: [TasksComponent]
+        })
+
+        export class TasksModule {}
+
+
+        // App.Module.ts
+
+            @NgModule({
+            declarations: [ AppComponent , HeaderComponent, UserComponent],
+            imports: [BrowserModule, FormsModule, TasksModule, SharedModule],
+            bootstrap: [AppComponent ]
+        })
+
+        export class  AppModule {}
+    
+
+    --- In above code snippet you can see , we are only making "TaskComponent" export from task feature module.
+    --- Yes it is right, we don't necessarily export all the components from the feature or any module.
+    --- We should only "export the components that are being used by the components which are declared in the another module where we are importing the module".
+    --- Meaning "In our case, only the "Tasks" component is used by "AppComponent" from AppModule". No other components excepts "TaskComponent" from "TaskFeature module" used by any other components from AppModules "Declaration array"
+    --- Hence we are only "exporting tasks component".
+
+    // Important Note
+
+    --- After running the code for  above feature module you will get an error for the components from "shared module" that those components are not know elements.
+    --- Usually we face such errors when we are using an selector of the components but does not register them.
+    --- You might be wondering we have already added SharedModule in AppModule then it must be available to TaskFeature Module.
+    --- No it will not get available , So as of now TaskModule is not aware the components from SharedModule.
+    --- So to resolve this issue we need include "SharedModule in the imports array of an feature TaskModule".
+    --- It is thumb rule, every module must work on its own.
+    --- So if a module needs something, it must declare or import it itself. 
+    --- It can't get it from any parent module that might be using this module.
+    --- Hence if we need any components from SharedModule then we have register sharedModule inside the "TaskFeature Module."
+    --- Note if you need some features from "Browser Module" the you can import "commonModule" instead of it.
+    --- Because "Browser Module" is only meant to be imported into the root module which bootstrap the application.
+
 */
 
 

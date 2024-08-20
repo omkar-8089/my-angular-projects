@@ -1,7 +1,5 @@
-import { Component, Input, input } from '@angular/core';
-import { TaskComponent } from "./task/task.component";
+import { Component, Input} from '@angular/core';
 import { type NewTask, Task } from './task/task.model';
-import { NewTaskComponent } from "./new-task/new-task.component";
 import { TasksService } from './tasks.service';
 
 const dummyTasks: Task[] = [
@@ -32,8 +30,8 @@ const dummyTasks: Task[] = [
 
 @Component({
   selector: 'app-tasks',
-  standalone: true,
-  imports: [TaskComponent, NewTaskComponent],
+  // standalone: true,
+  // imports: [TaskComponent, NewTaskComponent],
   templateUrl: './tasks.component.html',
   styleUrl: './tasks.component.scss'
 })
