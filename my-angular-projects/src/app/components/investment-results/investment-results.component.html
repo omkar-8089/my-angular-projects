@@ -1,0 +1,54 @@
+<article class="investment-results">
+    @if (!(investmentResults().length > 0)) { 
+        <p>Please enter some values and press "Calculate"</p>
+    } @else {
+        <table>
+            <thead>
+                <tr>
+                    <th>year</th>
+                    <th>Investment value</th>
+                    <th>Interest (Year)</th>
+                    <th>Total Interest</th>
+                    <th>Investment Capitals</th>
+                </tr>
+            </thead>
+            <tbody>
+                    @for (result of investmentResults(); track result.year) {
+                        <tr>
+                        <td>{{result.year}}</td>
+                        <td>{{result.valueEndOfYear | currency : 'INR'}}</td>
+                        <td>{{result.interest | currency : 'INR' }}</td>
+                        <td>{{result.totalInterest | currency : 'INR'  }}</td>
+                        <td>{{result.totalAmountInvested | currency : 'INR' }}</td>
+                    </tr>
+                    }
+                <!-- <tr>
+                    <td>1</td>
+                    <td>$10,700.00</td>
+                    <td>$600.00</td>
+                    <td>$600.00</td>
+                    <td>$10,100.00</td>
+                </tr> -->
+            </tbody>
+        </table>
+    }
+</article>
+<!-- <article class="investment-results">
+    <section class="headings">
+       <div>
+        <span>year</span>
+        <span>Investment value</span>
+        <span>Interest (Year)</span>
+        <span>Total Interest</span>
+        <span>Investment Capitals</span>
+       </div>
+    </section>
+    <section class="rows">
+        <span>1</span>
+        <span>$10,700.00</span>
+        <span>$600.00</span>
+        <span>$600.00</span>
+        <span>$10,100.00</span>
+    </section>
+
+</article> -->
