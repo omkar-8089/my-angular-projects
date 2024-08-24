@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { IInvestmentResultFields, IUserInvestmentFields } from '../models/investment-model';
+import { IInvestmentResultFields, IUserInvestmentFields } from '../models/investment.model';
 
 @Injectable({
   providedIn: 'root',
