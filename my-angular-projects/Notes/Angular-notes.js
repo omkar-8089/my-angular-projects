@@ -1421,6 +1421,2460 @@ https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
     --- Note if you need some features from "Browser Module" the you can import "commonModule" instead of it.
     --- Because "Browser Module" is only meant to be imported into the root module which bootstrap the application.
 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+********  ******************* ************************************ Deep Dive ---- Components and Templates ********************************************************************************************
+
+--- In this section, we will be learning about the Components and Templates in more depth.
+--- There are some advance components features and concepts that we will learning as a part of this section.
+
+    // High-level  glance about this section.
+
+    1) Advance components Features and Concepts.
+    2) Working with Host element.
+    3) Inputs, Outputs & Two-way-Binding.
+    4) Interacting with Component Views & Content.
+    5) Component Lifecycle.
+
+
+    //  When & How To Split Up Components.
+    
+    --- In Angular, the principles of "Separation of Concerns" and "Code Colocation" represent two different approaches to organizing code within an application. 
+    --- These principles often need to be balanced to create maintainable, understandable, and efficient applications.
+
+        --> Separation of Concerns (SoC) in Angular
+
+        --- Separation of Concerns (SoC) is a design principle that encourages organizing code in a way that separates different functionalities into distinct modules, components, services, or files. 
+        --- Each part of the application should handle a specific aspect of the functionality, promoting modularity, reusability, and maintainability.
+
+        -->  Simplicity and Code Colocation in Angular
+
+        --- Simplicity and Code Colocation is an approach that emphasizes placing related pieces of code together in the same file or directory. 
+        --- This is often in contrast to SoC, as it values keeping related functionality close to each other to simplify understanding and development.
+
+        --> Balancing Separation of Concerns and Code Colocation
+
+        --- In practice, Angular development often requires balancing SoC and Code Colocation:
+
+        1) Complex Features: 
+        --- For complex applications, SoC might take precedence to ensure that the application remains modular, scalable, and maintainable. Code is separated into services, components, and modules with clear boundaries.
+
+        2) Simple Features: 
+        --- For smaller or less complex parts of an application, Code Colocation might be favored to keep things simple and avoid over-engineering.
+
+
+
+    // Extending an Built-in Elements.
+
+
+    --- In this section we will learn how can we apply  pattern for extending an Built-in Elements.
+    --- So when we create components, these components are get's rendered in the DOM.
+    --- And the content i.e Template of that component is added in between those selectors.
+    --- Meaning our component's selector are always residing in the DOM they are not compiled away.
+    --- Meaning
+
+        For example
+
+            // App-Button
+
+            import { Component } from '@angular/core';
+
+            @Component({
+            selector: 'app-button',
+            standalone: true,
+            imports: [],
+            templateUrl: './button.component.html',
+            styleUrl: './button.component.scss'
+            })
+            export class ButtonComponent {
+
+            }
+
+            // Template Code
+
+            <button>
+                <span>
+                Logout
+                </span>
+                <span class="icon">
+                →
+                </span>
+            </button>
+
+            // Usage (In another component's HTML file.)
+
+            <app-button/>
+
+    --- Now when we compiled this code and check the DOM , we can see below code in the Browser.
+
+                <app-button _ngcontent-ng-c2077118811="" _nghost-ng-c3521605694="">
+                        <button _ngcontent-ng-c3521605694="">
+                                    <span _ngcontent-ng-c3521605694=""> Logout </span>
+                                    <span _ngcontent-ng-c3521605694="" class="icon"> → </span>
+                        </button>
+                </app-button>
+
+
+
+    --- In this code you can see, the "template" part of "app-button" component is being rendered inside the "app-button" selector.
+    --- This happens for every component, where  that component's markup is replace or gets added between the selector tag.
+    --- This is not wrong, but sometimes we can have redundant elements are in the DOM.
+    --- For example, In our case, we have a "<app-button" and "button" is kind of duplication,
+        --- Here, we are having a wrapper that's almost named button(app-button) around an element that's named button.
+    --- we can actually change our code hereto end up with a leaner DOM, because what we essentially wanna do here with that button component is that we wanna kind of extend the built-in button component.
+    --- By extending the "built-in" button component, we will be having same capabilities , we can listen same events and we have more control over its markup in this case.
+
+    --> How to extent the Built-In elements ?
+
+    --- Following-up to our example, we will see how can we extend the built in component.
+    --- In our example , we are having below code which is residing in the "app-button" component.
+            
+
+            // app-button HTML
+            <button>
+                    <span>
+                    Logout
+                    </span>
+                    <span class="icon">
+                    →
+                    </span>
+            </button> 
+
+        1)
+        --- As a first step, we are removing the "button" element from the template and will keep only content from it .
+        --- Hence after making this change the "template of ""app-button" component will look like below code.
+
+            // app-button (After removing "button" and keeping only content)
+                        <span>
+                        Logout
+                        </span>
+                        <span class="icon">
+                        →
+                        </span>
+
+        2)
+        --- The second is the most important step.
+        --- Here , we are changing the "selector" of "app-button" i.e "ButtonComponent".
+        --- Usually, we set the selector's name as "app-button" or "app-dashboard", however we are not limited to add this kind of selector.
+        --- We can have different kind of selectors as well.
+        --- Angular supports  "Type(Element) Selector i.e "app-button"" (The one we commonly use), then the "Attribute selector" and last one "Class selector".
+
+            --> Reference
+            https://angular.dev/guide/components/selectors 
+
+            --- Here, we will be extending an element using an "Attribute" selector instead of Element selector.
+            --- Attribute selector is same to the "CSS attribute selector".
+            --- By using the "CSS attribute selector" as a component selector, the component selector will act as CSS Selector.
+            --- Let's see how can we do this as a Part of step 3.
+
+
+        3)
+
+        --- IN this step, we are adding "CSS attribute selector" as a selector of the Component.
+        --- Make sure when we are adding this "CSS attribute selector" as selector, we have to name it  unique so that it will not conflict with built-in attribute names.
+        --- For example you can add prefix as "app" then "CSS attribute selector" will "appButton" .
+        --- Now when you add this "attribute" to any element then this component will get active and the template of this component will get added between the tag's of an element on which we are putting this attribute.
+        --- On the top of it you can also combine this selector with other selector.
+        --- For example, I want to active above component only when my attribute selector is applied on the "button element".
+        --- So in that case you can add your selector (ButtonComponent selector) as "button[appButton]".
+        --- This will activate "ButtonComponent" only when the it's selector(CSS attribute selector) is present on the "button element"
+
+        --> After following above steps , please find the find code..
+
+            // Button Component
+            import { Component } from '@angular/core';
+
+            @Component({
+            selector: 'button[appButton]', //// Attribute selector
+            standalone: true,
+            imports: [],
+            template:  ` 
+                    <span>
+                    Logout
+                    </span>
+                    <span class="icon">
+                    →
+                    </span>
+            `
+            })
+            export class ButtonComponent { }
+
+
+            // Another Component's Template where we are using this ButtonComponent
+
+             <button appButton></button>
+
+             --- Here we have directly adding "appButton" on the button element.
+             --- Which also satisfy the attribute condition that we have specified in the "ButtonComponents" selector.
+             --- Once it gets compiled and then the content "appButton i.e ButtonComponent" will get added between "button element's tag"
+             --- This will rendered the below code in the DOM.
+
+
+
+            // DOM code (Browser)
+
+            <button _ngcontent-ng-c2916673706="" appbutton="" _nghost-ng-c19137640="">
+            
+            
+                        <span _ngcontent-ng-c19137640=""> Logout </span>
+                        <span _ngcontent-ng-c19137640="" class="icon"> → </span>
+                        
+            </button>
+
+            // OLD DOM CODE
+
+               <app-button _ngcontent-ng-c2077118811="" _nghost-ng-c3521605694="">
+                        <button _ngcontent-ng-c3521605694="">
+                                    <span _ngcontent-ng-c3521605694=""> Logout </span>
+                                    <span _ngcontent-ng-c3521605694="" class="icon"> → </span>
+                        </button>
+                </app-button>
+
+
+            --- By comparing above DOM , you can see how we have made our DOM linear by extending the "button element" and removing the wrapper  "app-button" component,
+                --- Just by changing the selector.
+
+
+            --- That's how we can take the control of built in HTMl element by our custom component.
+            --- This is a pretty powerful Angular feature and pattern because it is essentially allows us to use built-in elements and extend their functionality or templates. 
+            --- This pattern of selecting an element by attribute is used if you wanna extend a built-in element.
+            --- Whenever you're building a brand new component that just wraps a bunch of built-in elements but doesn't really replace one,you should use the element selector as we did it before (Element i.e Type selector).
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// Content-Projection
+
+--- As we know how can do content projection.
+--> Please refer to https://v17.angular.io/guide/content-projection 
+--- However content projection is more than we know.
+--- We can have Multi-slot content projection and some advance project contention.
+
+    --> Multi-slot content projection: 
+    --- Allows different parts of the projected content to be placed into different slots using the select attribute.
+    --- Using multi-slot content projection, we decides which contains should  go where.
+    --- WE can use "select" property to decide this on "ng-content" element.
+    --- "select" accepts any "CSS selector" in the end.
+    --- Let's understand this by below example.
+    --- Also we can use any kind of "selector" to refer the multiple slot.
+
+        // Child - Component (Card component)
+
+            <div class="card">
+            <div class="card-header">
+                <ng-content select="[card-header]"></ng-content>
+            </div>
+            <div class="card-body">
+                <ng-content select="[card-body]"></ng-content>
+            </div>
+            <div class="card-footer">
+                <ng-content select="[card-footer]"></ng-content>
+            </div>
+            </div>
+
+        // Parent - Component 
+
+            <card-component>
+            <div card-header>Header Content</div>
+            <div card-body>Body Content</div>
+            <div card-footer>Footer Content</div>
+            </card-component>
+
+    --- In this example, you can see how we are using different "slots" to inject the content.
+    --- Also we are using those slots(selector) name to inject the respective content.
+    --- Basically Angular will inject the wrapped content (Content between the selector, like <a-component> Hi </a-component>)on the basis of the "selector" that we pass . 
+
+    // Key Points to understand.
+
+    --- Sometimes if we are having multi-slot content projection and if we do not pass the "selector" then Angular will not understand where to inject the content,
+    --- Hence Angular will inject all content in the place of last "<ng-content>" element
+
+            // Child Component
+
+                <div>
+                <span><ng-content></ng-content> </span>
+                <span> <ng-content></ng-content> </span> //// All the content will get injected inside this second span and in the place of second ng-content.
+                </div>
+
+            // Parent component
+
+                <app-card>
+                    <h1>hello</h1>
+                    <h2>hello</h2>
+                </app-card>
+        
+            --- Like in this case,  All the content will get injected inside this second span and in the place of second ng-content.
+            --- Because Angular will not understand where to inject the content.
+
+    --- Similar case will happen if you have two(multi-slot) "ng-content" and you have added "select" to only on slot.
+
+                  // Child Component
+
+                <div>
+                <span><ng-content ></ng-content> </span>
+                <span> <ng-content select="#data"></ng-content> </span>
+                </div>
+
+            // Parent component
+
+                <app-card>
+                    <h1>hello</h1>
+                    <h2 id="data">hello</h2>
+                    <h3>How are you ! </h3>
+                </app-card>
+
+        --- In this case the content with selector "#data" will get injected in the respective slot.
+        --- However the remaining content will get injected in the first "ng-content" slot, which does not have any selector.
+        --- Basically Angular will matches the respective selector and put that content in that slot.
+
+    --- In Summary, you can make the use of "select" to implement multi-slot projection.
+    --- If "ng-content" do not have any "select" attribute i.e which does not have any configuration will then output any content that's not matched by some other ng-content element.
+        --- It is not selected by any specific way by another ng-content element.
+
+
+    // Advance "Content Projection"
+
+    --> "ngProjectAs "
+
+    --- The ngProjectAs directive enables you to specify a custom identifier for the projected content. 
+    --- This is especially useful when you have multiple <ng-content> elements within a component, and you want to differentiate between them.
+    --- You can provide a specific name for the content being projected, allowing the parent component to identify and use that content appropriately.
+    --- ngProjectAs, that allows you to specify a CSS selector on any element.
+    --- Whenever an element with ngProjectAs is checked against an <ng-content> placeholder, Angular compares against the ngProjectAs value instead of the element's identity:
+
+    --- Let's understand "ngProjectAs" by below example.
+      
+    // Code snippet
+
+        // Card component (Child component Template)
+        <div class="card-shadow">
+
+                <ng-content select="card-title"></ng-content>
+        
+                <div class="card-divider"></div>
+        
+                <ng-content></ng-content>
+        </div>
+
+        // Using the above component in Parent Component //
+            <custom-card>
+            <h3 ngProjectAs="card-title">Hello</h3>  //// Here, we passing an "identifier"(That we defined in child component's 'select' attribute) as a value to "ngProjectAs"
+            <p>Welcome to the example</p>
+            </custom-card>
+
+
+        // Rendered DOM //
+        <custom-card>
+        <div class="card-shadow">
+            <h3>Hello</h3>
+            <div class="card-divider"></div>
+            <p>Welcome to the example></p>
+        </div>
+        </custom-card>
+
+
+
+// Defining Content Projections fallbacks
+
+--- This is the another feature of the ng-content.
+--- Here , we can specify the fallback content when we do not specify the respective ng-content value.
+--- Let's understand this by below example.
+
+
+        // Code snippet (Button Component)
+
+        
+                <span>
+                <ng-content></ng-content>
+                </span>
+                <span class="icon">
+                <ng-content select="icon">
+                    ▶️
+                </ng-content>
+                </span>
+
+        --- In this code snippet, we have specified the "fallback content" if  no specific "icon" is defined.
+        --- Hence fallback content will appeared in that case.
+
+        // Parent component
+
+        <button appButton>
+                Logout
+        </button>
+
+
+        --- Here we have not specified the "icon" selector for any element.
+        --- Hence the fallback content will get execute.
+
+
+
+        // DOM rendered
+
+        <button _ngcontent-ng-c1215933227="" appbutton="" _nghost-ng-c2606595364="">
+        
+                    <span _ngcontent-ng-c2606595364=""> Logout </span>
+
+                    <span _ngcontent-ng-c2606595364="" class="icon"> ▶️  <!--container--></span>
+        
+        </button>
+
+
+// Multiple Selectors (In Content projection' select attribute and Component's selector)
+
+--> Multiple selectors for "ng-content's select attribute"
+
+--- Here, first we will se how can we specify the multiple selector's for "select" attribute in "ng-content".
+--- By doing this we can be more restrictive towards the passing content .
+--- By adding this, we can be more selective about which kind of content can  be projected in your components.
+--- This will make sure that the content projection is not using in an incorrect way .
+
+--- In below example, we have created a "control" component, which will responsible for creating controls for the form.
+--- Here, we will be more selective about injecting the "controls" .
+--- Let's understand it by below code snippet.
+
+        // Code snippet
+
+            // Controls component (HTML)
+
+                 <p>
+                    <label>{{label()}}</label>
+                    <ng-content select="input, textarea"></ng-content>
+                </p>
+
+            --- In this code snippet, we are more specific about which kind of content should be injected in the component.
+            --- That's why we specify the multiple element selectors.
+            --- So we can only inject the "input" and "textarea" element.
+            --- Any other elements will simply get omitted if we specify them as a part of wrapped content.
+            --> Important to note tha, we can specify any combinations of selectors.
+
+--> Multiple selectors in Component
+
+--- In Angular, when you create a component, you can define multiple selectors for it. 
+--- This allows the component to be used with different tag names, class names, or attribute names in your templates.
+
+--- Like "select" attribute in "ng-content", here also you can specify the multiple selectors by adding "comma" between them.
+
+    // Example of a Component with Multiple Selectors
+
+        // Button Component
+
+                import { Component } from '@angular/core';
+
+                @Component({
+                selector: 'button[appButton], a[appButton]',
+                template: `
+                    <button class="btn">
+                    <ng-content></ng-content>
+                    </button>
+                `,
+                styles: [`
+                    .btn {
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    }
+                    .btn:hover {
+                    background-color: #0056b3;
+                    }
+                `]
+                })
+                export class ButtonComponent { }
+
+        // Usage of it with different selectors.
+
+
+                <p>
+                <button appButton> //// using here
+                    Submit
+                    <span ngProjectAs="icon">
+                        ▶️
+                    </span>
+                </button>
+            </p>
+            <p>
+                <!-- <a appButton> //// using here
+                    Submit
+                    <span ngProjectAs="icon">
+                        ▶️
+                    </span>
+                </a> -->
+            </p>
+
+    --> Practice things
+    --- Create multi selector component and check its behavior and validate the DOM tree.
+    --- Check what will happen if we do not specify the "," between selector names.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// Scoping CSS styles to Components
+
+--- Till the time , we are adding the all the application style in global ,"style.css" or "style.scss".
+--- Now, we should learn how can we add component related styling in its style sheet or style file.
+--- The key difference between adding the style at component level and global level, is 
+    --- The style at component level is scoped to that component only. It never mix with other component's style.
+    --- However the style at global file, is available globally. So there might be chances where conflicts occur if we are having same kind selectors on different components .
+
+--- To understand about the controlling styling we will be learning about the "View Encapsulation".
+
+--> View Encapsulation
+
+--- "View Encapsulation" is the another great feature provided by an Angular.
+--- This feature help us to decide the scope of the style of the component.
+--- We can specify the "encapsulation" as a part of the component's metadata.
+--- "ViewEncapsulation" is "enum" which contains different values, which decides the scope of the component's style.
+--- Let's understand it's behavior.
+
+
+
+    // ViewEncapsulation.none
+
+
+    --- To understand how this works, we can consider the following scenario.
+    --- We have a "control" component, where we are using "ng-content" to inject the content.
+    --- Let's understand this by code.
+
+
+        // Control's component
+
+
+        import { Component, input } from '@angular/core';
+
+            @Component({
+            selector: 'app-control',
+            standalone: true,
+            imports: [],
+            template: `
+          
+                <p class="control">
+                        <label>{{label()}}</label>
+                        <ng-content select="input, textarea"></ng-content>
+                    </p>
+
+                `,
+            
+            styles: `
+                .control label {
+                    display: block;
+                    font-size: 0.8rem;
+                    font-weight: bold;
+                    margin-bottom: 0.15rem;
+                    color: #4f4b53;
+                }
+                
+                .control input,
+                .control textarea {
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font: inherit;
+                    font-size: 0.9rem;
+                    color: #4f4b53;
+                }
+            
+            `
+            })
+            
+            
+            
+            export class ControlComponent {
+            label = input.required<string>();
+            }
+
+        --- In the above code snippet if you can see we have specify the "ng-content", which is accepting "input and textarea"
+            --- as content.
+        --- Also we have specify the styling for "input" and "textarea".
+        --- Now, here we are in the assumption of "when we will be injecting "input" or "textarea"" as wrapped content,
+            --- wherever we are using this "control" component, the style that we have specify in "controls" component
+            --- will get applied.
+        --- Meaning we are assuming that style will get apply when "DOM structure will get created where input or text area will
+            --- became part of this component after injection."
+        --- But that's not the case in actual.
+        --- Here, "input and textarea" are not a part of "control component".
+        --- When angular scans the template, it can only see the "ng-content" selector or placeholder.
+        --- Angular does not care about which content might eventually end up in your components template, it only cares about what it sees in your component template.
+        --- Here it only sees the placeholder, not the actual inputs or text areas that will end up here in the  future.
+        --- That's why the styles written in control component will not affect inputs or text areas that will be projected into this component. 
+
+        --> Now, How can we resolve this scoping issue ?
+
+        --- We can disable the scoping of this component using "ViewEncapsulation.None".
+        --- This will make component style to affect other component styles.
+        --- Meaning wherever we are using this similar markup or HTML , this style will get applied to it.
+        --- The default value of  "encapsulation" is  "ViewEncapsulation.Emulated" --> Which is responsible for scoped styling.
+        --- "ViewEncapsulation.None" will disable the style scoping.
+        --- After applying this to a control component, the styles from it becomes the global style now.
+        --- Hence , Now it will have affect on "inputs and textarea" when we run the application in browser.
+
+
+        --- Some high level details about all the properties in ViewEncapsulation
+
+        // ViewEncapsulation.ShadowDom
+
+        --- In ShadowDom mode, Angular uses the browser's native Shadow DOM API to attach a shadow root to the component's host element. 
+        --- The component's styles and DOM are fully encapsulated inside this shadow root, completely isolated from the rest of the document.
+        --- Styles are scoped to the component naturally by the Shadow DOM. 
+        --- The styles and DOM within the shadow root are completely isolated, so they do not affect the styles of other components or elements outside the shadow root.
+        --- Requires browsers that support Shadow DOM. This is widely supported in modern browsers, but not in some older ones.
+        --- Native Shadow DOM can be less performant in some cases due to the overhead of creating and managing shadow roots. However, it offers true encapsulation, which can be beneficial for large, complex applications.
+        --- Complete isolation. Styles within the Shadow DOM do not affect, and are not affected by, styles outside the Shadow DOM.
+        --- It's particularly useful for web components(JavaScript Concept) or complex UIs where you want to ensure complete isolation of a component's styles and DOM.
+
+
+        // ViewEncapsulation.Emulated
+
+        --- Angular emulates the Shadow DOM browser feature for its own components.
+        --- Angular emulates Shadow DOM behavior by adding unique attributes to the component's host elements and their children. 
+        --- This ensures that styles defined in the component are scoped to that component only, even though they are actually applied globally in the DOM.
+        --- The component's styles are encapsulated by automatically appending unique attributes (like _ngcontent or _nghost) to the CSS selectors and corresponding elements. 
+        --- This prevents styles from leaking out of the component and affecting other parts of the application.
+        --- Since it doesn't rely on the browser's native Shadow DOM support, it works in all browsers, including older ones that don't support Shadow DOM.
+        --- Slightly better performance than ShadowDom since it doesn't rely on the browser to manage a Shadow DOM, but rather manipulates the global styles.
+        --- Styles are scoped to the component, preventing conflicts with global styles or other components, but they are still part of the global CSS tree.
+
+
+        // ViewEncapsulation.None
+
+        --- The component’s styles are added to the global stylesheet. They can affect any elements in the application, not just the ones within the component.
+        --- There is no encapsulation or isolation of styles. The styles can easily leak out and affect other components, and other global styles can also affect the component.
+        --- Angular does not append attribute selectors (like _ngcontent or _nghost) to the component's styles or DOM elements. The styles are applied as they are defined.
+        --- ViewEncapsulation.None is typically used when you intentionally want to apply styles globally or when you want to override styles across the entire application.
+
+
+        --> Inheritance Styling and Global Styles Effects
+        --- Kindly practice for below scenario.
+            1) Parent and Child --> ShadowDom
+            2) Parent ShadowDom and Child Emulated
+            3) Parent Emulated and Child ShadowDOM
+            4) Parent and Child --> Emulated
+
+
+
+    // Working with Host Elements
+
+    --- In Angular, the term "host element" refers to the DOM element in which a component's view is rendered.
+    --- Every Angular component has a Host Element.
+    --- An example "A component with a selector of “app-header” targets an <app-header> element which is rendered into the real DOM".
+    --- Host Element is the element that is selected by "component's selector."
+    --- When it comes to styling these host elements, Angular provides a few ways to apply styles specifically to them, 
+        --- making it easier to control the appearance of the component's container without affecting other elements inside or outside of the component.
+    --- The :host pseudo-class selector in Angular allows you to apply styles directly to the host element of a component. 
+    --- This is particularly useful when you want to style the component's container element rather than the internal content.
+
+    --- Let's understand this by our previous "CSS attribute component" example.
+    --- In previous sections we have created an Button Component by extending an Button element.
+    --- Now, we will see how we can make the use of "Host" elements to style the component's markup.
+
+
+        // Code Snippet
+
+        // Button's Component
+
+            import { Component } from '@angular/core';
+
+            @Component({
+            selector: 'button[appButton], a[appButton]',
+            standalone: true,
+            imports: [],
+            template: `
+            
+                <span>
+                <ng-content></ng-content>
+                </span>
+                <span class="icon">
+                <ng-content select="icon">
+                    ▶️
+                </ng-content>
+                </span>
+            
+            
+            `,
+            styles: `
+            
+            button {
+                     display: inline-block;
+                     padding: 0.65rem 1.35rem;
+                     border-radius: 0.25rem;
+                     font-size: 1rem;
+                     text-align: center;
+                     cursor: pointer;
+                     background-color: #691ebe;
+                     color: white;
+                     border: none;
+                   }
+                    
+                   button:hover {
+                     background-color: #551b98;
+                   }
+                    
+                   .icon {
+                     display: inline-block;
+                     margin-left: 0.5rem;
+                     transition: transform 0.2s ease-in-out;
+                   }
+                    
+                   button:hover .icon {
+                     transform: translateX(4px);
+                   }
+            `
+            })
+            export class ButtonComponent {
+
+            }
+
+            // Using Above Button Component in below Parent Component
+
+
+             <button appButton>
+                    Submit
+                    <span ngProjectAs="icon">
+                        ▶️
+                    </span>
+            </button>
+
+
+            --- In this code snippet, you can see we have added a  "button" related styling in button component.
+            --- But, "button" element is not present in the template of Button Component.
+            --- Since "we do button[appButton]" as a selector and we are using it inside a parent component.
+            --- The "button" element which holds [appButton] attribute satisfies our selector condition.
+            --- Hence eventually it is now our HOST element.
+            --- So In above code our styling will not work as Angular will not able find "button" inside our button's component template.
+
+            --- To resolve that issue we can apply below style in "Buttons component"
+
+            // Styles with HOST
+
+            // Button's Component
+
+            import { Component } from '@angular/core';
+
+            @Component({
+            selector: 'button[appButton], a[appButton]',
+            standalone: true,
+            imports: [],
+            template: `
+            
+                <span>
+                <ng-content></ng-content>
+                </span>
+                <span class="icon">
+                <ng-content select="icon">
+                    ▶️
+                </ng-content>
+                </span>
+            
+            
+            `,
+            styles: `
+            
+            :host {
+                display: inline-block;
+                padding: 0.65rem 1.35rem;
+                border-radius: 0.25rem;
+                font-size: 1rem;
+                text-align: center;
+                cursor: pointer;
+                background-color: #691ebe;
+                color: white;
+                border: none;
+                }
+                
+                :host:hover {
+                    background-color: #551b98;
+                }
+                
+                .icon {
+                    display: inline-block;
+                    margin-left: 0.5rem;
+                    transition: transform 0.2s ease-in-out;
+                }
+                
+                :host:hover .icon {
+                    transform: translateX(4px);
+                }
+            `
+
+            })
+
+            export class ButtonComponent {
+
+            }
+
+            --- In this code snippet we have replace "button" with "host" selector.
+            --- Because in our case "button" tag is the host element and inside it our button component's markup is rendering.
+            --- Hence "host" selector will apply the styles to the host element.
+            --- Basically the "Component selector" i.e The Component HOST element is NOT Considered as part of component template because "Template is rendering inside it".
+            --- For example "<app-header> ...... </app-header>". Here "app-header" is host element and template is rendering inside it so that styling that we are applying should only consider part 
+                --- which is rendering inside it.
+            --- By using "host" we can apply the style to the Component element i.e app-header 
+
+            --> More cases discovery on CHAT GPT
+
+// Using Host elements like Regular element.
+
+
+--- We know that Component's selector is an custom html tag which represent a our component in a DOM.
+--- In the end it can be rendered as element in the DOM.
+--- IN previous section, we saw that we can call "HOST element" for component's selector.
+--- If we could look at this, in the end it is just an element which is rendered in the DOM.
+--- Therefore we leverage it for achieving our implementation.
+--- Hence like other HTML elements we can set the "attributes" like "classes, id and so on ..." to this elements.
+--- Make sure setting "input" properties is different and setting attribute like Regular HTML element is bit different.
+--- Let's understand this by below example.
+
+
+    // Code snippet
+
+
+        // Control component
+
+        import { Component, input, ViewEncapsulation } from '@angular/core';
+
+        @Component({
+        selector: 'app-control',
+        standalone: true,
+        imports: [],
+        template: `
+        
+          <label> {{label()}} </label>
+        
+          <ng-content select="input, textarea"></ng-content>
+        
+        
+        `,
+        styles: `
+        
+        .control label {
+                display: block;
+                font-size: 0.8rem;
+                font-weight: bold;
+                margin-bottom: 0.15rem;
+                color: #4f4b53;
+            }
+            
+            .control input,
+            .control textarea {
+                width: 100%;
+                padding: 0.5rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                font: inherit;
+                font-size: 0.9rem;
+                color: #4f4b53;
+            }
+                    
+        
+        
+        ` ,
+        encapsulation: ViewEncapsulation.None, 
+        })
+        export class ControlComponent {
+        label = input.required<string>();
+        }
+
+    
+        // Usage in Parent component
+
+
+        <form>
+
+            <app-control label="Title">
+                <input  name="title" id="title"/>
+            </app-control>
+            
+            
+            <app-control label="Request">
+                <textarea  name="request" id="request" rows="3"> </textarea>
+            </app-control>
+
+
+        </form>
+
+        --- IN the above code snippet, we have a "control" component, which is responsible for injecting content (For input and textarea).
+        --- Now if you could look at the style for "control component", you will see we have ".control" class and then we are applying some styling on "input and textarea".
+        --- But ".control class" in its template file.
+        --- Here , you will say that we can use the ":host" sudo class to apply the styling directly to the host element and remove control class.
+        
+        --- For example, below code snippet will comes to your mind
+
+                    :host label {
+                            display: block;
+                            font-size: 0.8rem;
+                            font-weight: bold;
+                            margin-bottom: 0.15rem;
+                            color: #4f4b53;
+                        }
+                        
+                    :host input,
+                    :host textarea {
+                            width: 100%;
+                            padding: 0.5rem;
+                            border: 1px solid #ccc;
+                            border-radius: 4px;
+                            font: inherit;
+                            font-size: 0.9rem;
+                            color: #4f4b53;
+                        }
+
+        --> Unfortunately This code snippet will not work ☹️. Why ?
+
+        --- The first thing is our "control" component is having "encapsulation" is set to "ViewEncapsulation.None".
+        --- Which is resulting our component style is no more scope to component.
+        --- As we learned this style is a part of global style.
+        --- These styles of this component are indeed no longer scoped to this component.
+        --- Instead, they are applied as global styles to the entire page as if you would've put them into the styles.CSS file in the end.
+        --- And therefore there is no real connection between these styles and these CSS rules and the component to which you attach them. 
+        --- That's why this host selector doesn't target this component's host element with view encapsulation set to none.
+
+        --- Hence in this specific case we cannot use the "host selector".
+
+        // Solution
+
+        --- Here, we can make the use of treating host element as regular element.
+        --- For this we will add the "class" to our host element. i.e to "app-control" component.
+        --- Let's understand this by below code snippet
+
+
+        
+                // Code snippet
+
+
+                    // Control component
+
+                    import { Component, input, ViewEncapsulation } from '@angular/core';
+
+                    @Component({
+                    selector: 'app-control',
+                    standalone: true,
+                    imports: [],
+                    template: `
+                    
+                    <label> {{label()}} </label>
+                    
+                    <ng-content select="input, textarea"></ng-content>
+                    
+                    
+                    `,
+                    styles: `
+                    
+                    .control label {
+                            display: block;
+                            font-size: 0.8rem;
+                            font-weight: bold;
+                            margin-bottom: 0.15rem;
+                            color: #4f4b53;
+                        }
+                        
+                        .control input,
+                        .control textarea {
+                            width: 100%;
+                            padding: 0.5rem;
+                            border: 1px solid #ccc;
+                            border-radius: 4px;
+                            font: inherit;
+                            font-size: 0.9rem;
+                            color: #4f4b53;
+                        }
+                                
+                    
+                    
+                    ` ,
+                    encapsulation: ViewEncapsulation.None, 
+                    })
+                    export class ControlComponent {
+                    label = input.required<string>();
+                    }
+
+                
+                    // Usage in Parent component
+
+
+                    <form>
+
+                        <app-control label="Title" class="control">   //// "Here we are setting the "class" attribute to our host element"
+                            <input  name="title" id="title"/>
+                        </app-control>
+                        
+                        
+                        <app-control label="Request" class="control">  //// "Here we are setting the "class" attribute to our host element"
+                            <textarea  name="request" id="request" rows="3"> </textarea>
+                        </app-control>
+
+
+                    </form>
+
+        --- Hence this is the possible solution where we can set any kind of attributes to the host element(Our own components) whenever require.
+        --- This solution, will resolve our styling issue and styles from "control" component gets applied easily.
+        --- That's how you can make the use of host element to achieve the implementations.
+
+// Interactive with HOST elements from Inside Components
+
+
+    --- In previous sections, we saw that how we can apply styles to host elements, how to set attributes to host elements and also how can we make the use of ":host" css selector.
+    --- In previous section, we were setting up the attributes to the host element.
+    --- However there might be the changes sometimes , you forgot to add any attributes and also you need to add them every time when you use component's selector.
+    --- That's why Angular gives you an another way to setup this attributes.
+    
+    --- Basically , we can set these attributes from inside a component or host element.
+    --- In previous example, we have set the "class="control"" attribute wherever we are using "app-control" as  host element.
+    --- Now , we can this attribute from inside a control component.
+
+        // Code Snippet
+
+
+              // Control component
+
+                    import { Component, input, ViewEncapsulation } from '@angular/core';
+
+                    @Component({
+                    selector: 'app-control',
+                    standalone: true,
+                    imports: [],
+                    template: `
+                    
+                    <label> {{label()}} </label>
+                    
+                    <ng-content select="input, textarea"></ng-content>
+                    
+                    
+                    `,
+                    styles: `
+                    
+                    .control label {
+                            display: block;
+                            font-size: 0.8rem;
+                            font-weight: bold;
+                            margin-bottom: 0.15rem;
+                            color: #4f4b53;
+                        }
+                        
+                        .control input,
+                        .control textarea {
+                            width: 100%;
+                            padding: 0.5rem;
+                            border: 1px solid #ccc;
+                            border-radius: 4px;
+                            font: inherit;
+                            font-size: 0.9rem;
+                            color: #4f4b53;
+                        }
+                                
+                    
+                    
+                    ` ,
+                    encapsulation: ViewEncapsulation.None, 
+
+
+                      host: {
+                        class: 'control'                //// Here, we are using "host" property from component's metadata to set the attributes for a component.
+                    }
+                    })
+                    export class ControlComponent {
+                    label = input.required<string>();
+                    }
+
+
+        --- Here, we are using "host" property from component's metadata to set the attributes for a component.
+        --- "host" accepts an object for the configuration.
+        --- It will add the key value pairs , you add here as properties on your host element.
+        --- Like, In our example , we have added "class" a property and "control" as a value for it.
+        --- Then it will add "class" as attribute to the "controls component element (app-control)" wherever we are using.
+        --- WE just need to define this once it here and it will applies to all the places where we are using  "app-control."
+        --- In summary, you can make the use of "host" property from @Component's metadata to configure the host elements attribute from inside a component and it will applies these attributes in all the place,
+            --- wherever we are using this component,
+
+
+
+// When to Rely or NOT rely on HOST Elements
+
+
+--- In previous sections, we learned a lot about host elements.
+--- But, there few things we need to keep in mind while using HOST elements.
+--- We can use host elements to style component sometimes we have non-sematic html tag's wrapper which cause redundant code.
+
+--- For example, Let's see how can we make the use of "host" elements.
+
+        // Code snippet (Before using HOST )
+
+
+        import { Component, input } from '@angular/core';
+
+        @Component({
+        selector: 'app-dashboard-items',
+        standalone: true,
+        imports: [],
+        template: `
+                        
+        <div class="dashboard-item">
+                    <article>
+                        <header>
+                            <img [src]="image().src" [alt]="image().alt" />
+                            <h2>{{header()}}</h2>
+                        </header>
+                            <ng-content></ng-content>
+                    </article>
+         </div>
+                        
+        
+        `,
+        style: `
+        
+            .dashboard-item {
+                    display: block;
+                    padding: 1rem;
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    background-color: #f8f8f8;
+                    box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.2);
+                }
+                
+            .dashboard-item header {
+                    display: flex;
+                    padding: 0;
+                    gap: 0.75rem;
+                    align-items: center;
+                    margin-bottom: 1rem;
+                }
+                
+            .dashboard-item header img {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                    object-fit: contain;
+                }
+                
+                h2 {
+                    margin: 0;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    color: #504e50;
+                }
+                
+                @media (min-width: 768px) {
+                    .dashboard-item {
+                    padding: 2rem;
+                    }
+                }
+
+        
+        `
+        })
+        export class DashboardItemsComponent {
+        image = input.required<{
+            src: string;
+            alt: string;
+        }>();
+        header = input.required<string>();
+        }
+
+        // Using in Parent component
+
+
+           <app-dashboard-items [image]="{src: 'globe.png', alt: 'A list of items'}" [header]="'Traffic'">
+                    <app-traffic/>
+        </app-dashboard-items>
+
+
+        --- In this code, if you can see the "template" of "dashboard-item" component, we are having a "wrapper div" which is acting as container for the template.
+        --- Ideally, this is redundant code, we can remove that class.
+
+         // After removing the "dashboard-item" class and div.
+        --- Our code will start breaking after removing a div with "dashboard-item" class.
+        --- Our style will break, because if you can the css of "dashboard-item" component , it is still scoped to the component level.
+        --- There it will check the "css selectors"(CSS style selector that we have added in scss/css file) matches inside a templates.
+        --- Therefore it will not found an element which is having "dashboard-item" class.
+
+        // Solutions
+
+        --- To resolve this , we have 2 possible solution
+
+        1) Make a use of "ViewEncapsulation.None" and add "dashboard-item" as class inside a "host" configurations.
+
+        --- Below code will put the styling of the dashboard-item components in global styles.
+        --- And since we are adding "class(.dashboard-item) class on a host" the style will get applied.
+        --- Make sure you have to specify the respective  class that we are using inside a host configuration other will global style will not have that affect.
+            --- Because it should match with css selectors that you have specified in the styles.
+            
+            
+            import { Component, input} from '@angular/core';
+            @Component({
+            selector: 'app-dashboard-items',
+            standalone: true,
+            imports: [],
+            templateUrl: './dashboard-items.component.html',
+            style: `
+        
+            .dashboard-item {
+                    display: block;
+                    padding: 1rem;
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    background-color: #f8f8f8;
+                    box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.2);
+                }
+                
+            .dashboard-item header {
+                    display: flex;
+                    padding: 0;
+                    gap: 0.75rem;
+                    align-items: center;
+                    margin-bottom: 1rem;
+                }
+                
+            .dashboard-item header img {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                    object-fit: contain;
+                }
+                
+                h2 {
+                    margin: 0;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    color: #504e50;
+                }
+                
+                @media (min-width: 768px) {
+                    .dashboard-item {
+                    padding: 2rem;
+                    }
+                }
+
+        
+        `
+            encapsulation: ViewEncapsulation.None,
+            host: {
+                class: 'dashboard-item'
+            }
+
+
+        2) Second solution is to use of ":host" pseudo class in the place of "dashboard-item" class.
+        --- In the below code, we have directly added ":host" pseudo css selector.
+        --- Here, we have replace all the ".dashboard-item" class occurrences with  ":host" pseudo class.
+        --- This will resolve the issue and apply the respective styling.
+
+
+            import { Component, input} from '@angular/core';
+            @Component({
+            selector: 'app-dashboard-items',
+            standalone: true,
+            imports: [],
+            templateUrl: './dashboard-items.component.html',
+            style: `
+        
+            :host {
+                    display: block;
+                    padding: 1rem;
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    background-color: #f8f8f8;
+                    box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.2);
+                    }
+
+                    :host header {
+                    display: flex;
+                    padding: 0;
+                    gap: 0.75rem;
+                    align-items: center;
+                    margin-bottom: 1rem;
+                    }
+
+                    :host header img {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                    object-fit: contain;
+                    }
+
+                    h2 {
+                    margin: 0;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    color: #504e50;
+                    }
+
+                    @media (min-width: 768px) {
+                    :host {
+                        padding: 2rem;
+                    }
+                    }
+        `
+
+        --- That's how you can make the use of host elements to style the components and to remove the unwanted non-semantinc wrappers. 
+
+
+
+        --> When NOT to Rely on HOST elements.
+
+        --- Sometimes, if you are having components which is having wrapper of "form, section, article" elements then you should keep them as wrapper.
+        --- Because they will provide the accessibility to your component and eventually in the application.In the end these elements are semantic elements.
+        --- Practically our "host" element do not add any accessibility to component and applications.
+        --- So we can consider host elements as a wrapper by removing elements like "div" or other "non-semantic" elements. 
+
+
+
+
+// Interacting with  "Host Elements" via  "@HostListener and @HostBinding"
+
+--- So far, we learned a lot for host elements.
+--- There are two ways to add the attributes to the host element.
+
+    1) Adding "host" property in a component decorators.
+    --- We can add the different properties in a host object .
+    --- These properties will eventually gets applied on the HOST elements.
+    --- This way of adding attributes to the host element is more modern and preferred way.
+    --- This option is recommended by Angular team.
+
+    2) Using "@HostBinding" decorator.
+
+    --- This is older way to add the attributes to the host element.
+    --- You can see this option in many project where we can set the attributes to host element.
+
+        import {HostBinding, input } from '@angular/core';
+        export class ControlComponent {
+            @HostBinding('class') className = 'control';
+            label = input.required<string>();
+        }
+
+        --- Here we are using  "className" as variable.
+        --- Because we cannot use reserve "class" keyword directly.
+        --- However "@HostBinding" provide us way where we can set the "property/attribute" name aliases.
+        --- HostBinding this decorator also takes an optional input, an optional argument, which allows you to define the actual property that should be bound as a string.
+        --- So in our case "control" will be set as a value for "class" attribute when it runs in the browser.
+        --- You only need this argument here though if you have a different property name, then you wanna bind.
+
+
+
+    --- You should use "host" property from "@Component" decorator.
+    --- @HostBinding is discourage way and it is exist due to backward compatibility and it was the common way to bind the attribute to host element in the past.
+
+
+    // Event Binding on Host element  ("event in Host object and @HostListener")
+
+
+    --- As we saw that how we can specify the properties/attributes to the host element.
+    --- Here we will see how we can the listen the events on the host elements.
+    --- Here also, there two ways to achieve it.
+
+    1) "event" on the host property of Component decorator.
+
+            host: {
+                class: 'control',
+                '(click)': 'onClick()'
+                }
+            })
+
+             onClick() {
+                console.log('Host element clicked !');
+            }
+
+    --- Here you can specify the event name in a "string" that you want to listen on the Host element.
+    --- Also you can pass the method that you want to execute when that event happens.
+    --- Make sure you can pass the "key and value" inside a string format.
+    --- Basically we are telling ANgular to execute "onClick()" method when "click" event occur on the host element.
+    --- Here, we have to make sure that the method that we are passing is exist otherwise it will fail.
+
+    2) By using "@HostListener"
+
+    --- @HostListener is a decorator to add the event on the Host element.
+    --- Like @HostBinding this was common way to achieve event binding in past.
+    --- We can use the @HostListener in below way.
+    --- Here, we are passing event name as argument to "@HostListener". and It will execute the method that we passed to it.
+
+
+                export class ControlComponent {
+                @HostBinding('class') className = 'control';
+                label = input.required<string>();
+
+                @HostListener('click') onClick() {
+                    console.log('Host element clicked !');
+                    }
+                }
+
+    --- Here, you need specify the method immediately else you will get the compile time error.
+            //Error => "TS1146: Declaration expected."
+
+
+    --- In summary, in both ways we can achieve the attribute and event binding on the HOST elements.
+    --- However using "host" object from @Component decorator is recommended approach by angular.
+    --- While using "@HostBinding and @HostListener"  makes our code more readable.
+
+
+// Accessing the HOST element Programmatically.
+
+--- We can access the Host element programmatically.
+--- To access the HOST element, we need to inject the reference of an HOST element.
+--- For that we will need to inject the "ElementRef" into our component.
+--- We can inject the "ElementRef" either using constructor or using angular "inject" method.
+--- ElementRef is a class defined by Angular. So it's part of the Angular framework, which defines a reference to some element that's rendered to the page.
+--- So it's pretty generic because it can refer to any element on the page.
+--- But by injecting it into a component like below, Angular will give you access to the host element of that component.
+
+
+    // Code snippet
+
+    import { Component, ElementRef, inject, input, ViewEncapsulation } from '@angular/core';
+
+    export class ControlComponent {
+    label = input.required<string>();
+    private el = inject(ElementRef); //// INjecting "ElementRef" using "inject" function
+    onClick() {
+        console.log('Host element clicked !', this.el); //// This will log the injected element ref for Host Element.
+        }
+    }
+
+    --- Basically "ElementRef" returns an object.
+    --- That contains 'nativeElement' property.
+    --- This "nativeElement" property is refer to the Host Element Instance in the DOM.
+    --- It is worth to note, We have to be careful while changing the properties for this ref because those are the direct ref of DOM element.
+
+
+// Class Binding
+
+
+--- Class binding in Angular allows you to dynamically add or remove classes from an HTML element based on a component's property values. 
+--- This is useful for conditionally styling elements in response to changes in your application's state.
+
+    --> Types of Class Binding.
+
+    1) Single Class Binding
+    --- You can bind a single class to an element using [class.className] syntax, where className is the class you want to conditionally apply.
+        // Example
+        <div [class.active]="isActive">This is a box</div>
+
+    2) Multiple Classes Binding
+    --- You can bind multiple classes using [class] or [ngClass]. This allows you to apply or remove multiple classes based on conditions.
+        // Example
+        <div [class]="isActive ? 'active highlight' : 'inactive'">This is a box</div>
+
+    3) NgClass Directive
+    --- The ngClass directive provides more flexibility and can be used to apply multiple classes conditionally. It can take an object, array, or string.
+        // Example
+
+        <div [ngClass]="{ 'active': isActive, 'highlight': isHighlighted }">
+            This is a box
+        </div>
+
+    --> Important Note
+
+    --- Angular has introduced "class" binding instead of "ngClass" binding in version 17.
+    --- Hence if we are adding "ngClass" then  we must need a "commonModule" or "NgClass" in the imports of the respective standalone component.
+    --- Kindly find new syntax for "class" binding
+
+        // Code snippet
+
+        <div [class]="{         //// Here you can use "class" instead of "ngClass".
+        'status-online': currentStatus === 'online',
+        'status-offline': currentStatus === 'offline',
+        '.status-unknown': currentStatus === 'unknown'
+        }">
+
+    --- If you have a class which contains "-" , then you should wrapped the class name inside a  quotes.
+    --- Thats how object key's work in js if you have "-" in between for keys.
+    --- Other wise you would not need "quotes" for keys.
+
+    --> References
+
+        https://medium.com/@danyalkhan8271/angular-17-cant-bind-to-ngclass-since-it-isn-t-a-known-property-of-div-the-curious-case-of-ba6b7209dc50
+        https://angular.dev/guide/templates/class-binding#binding-to-multiple-css-classes
+
+
+// Style Binding
+
+    --- Style binding in Angular allows you to dynamically set the inline styles of an HTML element based on component property values. 
+    --- This is useful when you need to apply styles conditionally or dynamically at runtime.
+
+    1. Single Style Binding
+
+    --- You can bind a single CSS style property to an element using the [style.styleName] syntax, where styleName is the name of the CSS property you want to bind.
+
+        // Example
+
+        <div [style.background-color]="isActive ? 'green' : 'red'">
+            This is a box
+        </div>
+
+    2.  Multiple Styles Binding
+
+    --- You can bind multiple styles to an element using the [style] syntax or the [ngStyle] directive. 
+    --- This allows you to apply multiple style properties conditionally.
+
+
+        // Example
+
+        <div [style]="{ 'background-color': isActive ? 'green' : 'red', 'font-size': fontSize + 'px' }">
+            This is a box
+        </div>
+
+    3. NgStyle Directive
+    
+    --- The ngStyle directive is a more flexible way to apply multiple styles to an element. 
+    --- It accepts an object where the keys are the CSS property names and the values are the expressions to evaluate.
+
+        // Example
+
+        <div [ngStyle]="{ 'background-color': isActive ? 'green' : 'red', 'font-size.px': fontSize }">
+        This is a box
+        </div>
+
+
+     --> Important Note
+
+     --- Similar to "ngClass" the Angular 17 does not support "ngStyle" directly.
+     --- If we are using "ngStyle" then it is must to import commonModule or NgStyle in the imports array of the respective standalone component.
+
+            // Code snippet
+
+            [style]="{      //// Latest syntax for adding style dynamically
+                     fontSize: '64px'  //// If you have '-' between property name then you can use camel casing .
+            }"
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+  
+// Component Lifecycle
+
+--- A component's lifecycle is the sequence of steps that happen between the component's creation and its destruction. 
+--- Each step represents a different part of Angular's process for rendering components and checking them for updates over time.
+--- In your components, you can implement lifecycle hooks to run code during these steps. 
+--- Lifecycle hooks that relate to a specific component instance are implemented as methods on your component class. 
+--- Lifecycle hooks that relate the Angular application as a whole are implemented as functions that accept a callback.
+--- A component's lifecycle is tightly connected to how Angular checks your components for changes over time. 
+--- For the purposes of understanding this lifecycle, you only need to know that Angular walks your application tree from top to bottom, checking template bindings for changes.
+--- The lifecycle hooks described below run while Angular is doing this traversal. 
+--- This traversal visits each component exactly once, so you should always avoid making further state changes in the middle of the process.
+
+
+--> Reference
+    https://angular.dev/guide/components/lifecycle 
+
+
+// Phases of LifeCycle
+
+1) Creation Phase
+
+--> Methods
+
+i) Constructor
+
+--- It is a standard JavaScript constructor method which runs when Angular instantiates the components.
+--- WE can use constructor to inject the dependencies.
+--- Also, we should not add any initialization  complex logic (Like sending HTTP Instructor) inside a constructor.
+--- Because when the constructor method is called input values will not received.
+--- WE must keep our constructor as lean as we can.
+--- Though, we can add basic initializing  of property  from class in the constructor.
+
+2) Change Detection Phase
+
+--> Methods
+
+--- Before start working on life cycle hook methods one thing that you keep in mind . Which is iImplementation".
+--- When you want to use any method from below you must "implement" your class with the "built-in" lifecycle interfaces.
+--- Because If you add the method and if mistakenly you did a type, the angular will not throw an any error.
+--- Because if method does match with any lifecycle method Angular will consider it as "regular class method" and "angular will not trigger that method automatically".
+--- In "implement", you basically "implements you Class of Component to a Built-in Lifecycle Interface".
+--- Hence Typescript will force you add that method in the class .
+--- Basically it is a job of interface to check whether the mention properties or methods are present or not.
+--- This will help you to avoid a typo mistakes and you can add your lifecycle method in more concrete way.
+--- "implements" and "interface" are Typescript features (Not a vanilla JS. )
+
+1) ngOnInit
+
+--- The ngOnInit method runs after Angular has initialized all the components "inputs" with their initial values. 
+--- A component's ngOnInit runs exactly once.
+--- This step happens before the component's own template is initialized. 
+--- This means that you can update the component's state based on its initial input values.
+--- So if your component receives any input values, those values will be initialized and will be available in ngOnInit, whereas that is not the case in the "constructor".
+--- WE can add the complex initialization logic here in ngOnInit like sending an HTTP request.
+    // Code snippet
+
+    export class ChildComponent implements OnInit {
+    
+        constructor() {
+            console.log('CONSTRUCTOR');
+        }
+
+        ngOnInit() {
+            console.log('ngOnInit');
+        }
+    }
+
+2) ngOnChanges
+
+--- The ngOnChanges method runs after any component inputs have changed.
+--- This step happens before the component's own template is checked. 
+--- This means that you can update the component's state based on its initial input values.
+--- During initialization, the first ngOnChanges runs before ngOnInit.
+
+    --> Inspecting "changes"
+
+    --- The ngOnChanges method accepts one SimpleChanges argument. 
+    --- This object is a "Record"(Util Type in Typescript) mapping each component input name to a SimpleChange object. 
+    --- Each SimpleChange contains the input's previous value, its current value, and a flag for whether this is the first time the input has changed.
+    --- This changes object which will be passed into this lifecycle method automatically by Angular.
+    --- So whenever the input changes Angular then automatically produces a changes object, which gives you more information about the input changes that happened.
+
+
+    // Code snippet
+
+
+        @Component({
+            ... 
+            })
+        export class UserProfile {
+        @Input() name: string = '';
+            ngOnChanges(changes: SimpleChanges) {
+                for (const inputName in changes) {
+                const inputValues = changes[inputName];
+                console.log(`Previous ${inputName} == ${inputValues.previousValue}`);
+                console.log(`Current ${inputName} == ${inputValues.currentValue}`);
+                console.log(`Is first ${inputName} change == ${inputValues.firstChange}`);
+                }
+            }
+        }
+    --- "firstChange" is "true" when your previous value is undefined which means this is your first initial value for the input.
+
+    --> Note
+    --- If you provide an "alias" for any input properties, the SimpleChanges Record still uses the TypeScript property name as a key, rather than the alias.
+    --- SOmetimes you need the details from "changes" to handle the state of your application.
+
+
+3) ngOnDestroy
+
+--- The ngOnDestroy method runs once just before a component is destroyed. 
+--- Angular destroys a component when it is no longer shown on the page, such as being hidden by NgIf or upon navigating to another page.
+--- This hook will then is invoked right before this Component instance is about to be thrown away, for example, because the Component is rendered conditionally and the condition is no longer met.
+
+    // DestroyRef (Modern alternative to ngOnDestroy)
+
+    --- As an alternative to the ngOnDestroy method, you can inject an instance of DestroyRef. 
+    --- You can register a callback to be invoked upon the component's destruction by calling the onDestroy method of DestroyRef.
+    --- DestroyRef is a class provided by Angular, and by injecting it and storing it in a property, 
+    --- You can set up a listener with help of that property and that injected value that will trigger a function whenever the Component into which you injected DestroyRef is about to be destroyed.
+    --- This feature is introduced in Angular version 16.
+
+        // Code snippet
+
+        @Component({
+                ....
+        })
+        export class UserProfile {
+        constructor(private destroyRef: DestroyRef) {  //// You can also inject "DestroyRef" class using "inject function", which is an alterative way to inject the dependecies.
+            destroyRef.onDestroy(() => {
+            console.log('UserProfile destruction');
+            });
+            }
+        }
+
+    --- You can pass the DestroyRef instance to functions or classes outside your component. 
+    --- Use this pattern if you have other code that should run some cleanup behavior when the component is destroyed.
+    --- You can use it inside any function from of your class where you need to add cleanup logic. You can use as many time inside a component.
+    --- You can also use DestroyRef to keep setup code close to cleanup code, rather than putting all cleanup code in the ngOnDestroy method.
+
+4) ngDoCheck
+
+--- ngDoCheck is related to Angular's change detection mechanism.
+--- ngDoCheck is invoked by Angular whenever Angular thinks that a UI update might be needed.
+--- So whenever it detects any event or anything anywhere on the entire application, so not just in this Component but anywhere in the entire Angular application that could lead to data changes.
+--- So this hook gets invoked a lot.
+--- Therefore you are discouraged to use this hook unless you need to, because whatever code you execute in here will run a lot.
+--- You might need it for some very advanced niche use cases, but often if you feel like you need it, there might be a better alternative solution available.
+--- During initialization, the first ngDoCheck runs after ngOnInit.
+
+// Content vs View
+
+"ngAfterViewInit" & "ngAfterViewChecked"
+--- The view of an Angular Component is its template you could say. So that's the view of the Component and all the elements that are in that template file here are part of that Angular view.
+--- Technically , the "View" is an internally manage data structure that holds the reference to the DOM elements rendered by a component.
+--- The "ngAfterViewInit" method runs once after all the children in the component's template (its view) have been initialized.
+--- This view contains the projected content but which also includes all other elements that are in that template. 
+--- The "ngAfterViewInit"  hook is executed once Angular is done initializing this Component's view. 
+--- So in the end, once it rendered it to the real dom, you could say.
+--- "ngAfterViewChecked" will then be executed whenever Angular performed change detection for this Component's view, 
+--- so when it's checked whether some UI updates are needed because of some possible data changes.
+
+"ngAfterViewChecked" & "ngAfterContentChecked"
+--- Content refers to the content projection that we do in our component.
+--- Content is any content that might be projected into a view with ngContent.component's view.
+--- Content  refers to "ng-content" that we inject into a child component by adding wrapped content inside a selector where we are calling it.
+--- So anything that's projected into a Component or into the template, into the view of a Component,any content that is projected here is referred to as content.
+--- So "ngAfterViewChecked" is execute once any projected content has been initialized.
+--- "ngAfterContentChecked" checked hook is executed whenever the content has been checked by Angular's change detection mechanism.
+--- And I'll say right away that you'll probably not use these hooks too often, but if you do have some logic that should execute whenever the projected content might have changed,
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+// Template Reference
+
+--- Template reference variables in Angular are a way to reference a DOM element or an Angular component within a template. 
+--- They are denoted by the "#" symbol followed by the variable name, and they can be used to access properties and methods of the element or component they reference.
+--- You can use template reference variables to access native DOM elements directly.
+--- Reference variables can be used to interact with Angular components and directives.
+--- Once we declared the variable in template , we can access anywhere in the same template.
+--- The hashtag is just important to create that variable. So you use it when you add it on the elements that should be stored in the variable.
+--- You use the variable name without the hashtag.
+--- It returns a type of HTML Element.
+--- For example in  below example "#myInput" will refer to the type "HTMLInputElement".
+--- If you logged this into console you will see  all the DOM properties which are associated with "#myInput i.e HTMLInputElement"
+
+        --> Accessing DOM Elements
+
+            <input #myInput type="text" placeholder="Enter text" /> //// Adding "#myInput" as Template variable.
+            <button (click)="logValue(myInput.value)">Log Input Value</button>
+
+
+        --> Accessing Component/Directive Instance
+
+        --- You can use template reference variables to interact with Angular components or directives within the template.
+        --- You can access the instance of a Component/Directive by adding a template reference variable on Component's element selector.
+        --- Note , If you are accessing an component which is extended to an built-in element (Like we did for ButtonComponent) then it that case also "first reference always to the Component instance not to the underlying DOM element."
+
+
+            <app-child #childComp></app-child>
+            <button (click)="childComp.someMethod()">Call Child Method</button>
+
+            // Child Component Code
+
+            @Component({
+            selector: 'app-child',
+            template: `<p>Child component</p>`
+            })
+            export class ChildComponent {
+            someMethod() {
+                console.log('Child method called!');
+            }
+            }
+
+
+
+
+// View Child
+
+
+--- In previous section, we saw that How we can access the template reference for an Element .
+--- We usually  sends the "template variables" through the function on a particular event and access them in component.
+--- However sometimes, we need to access the elements which has a template variable on it, without passing it to an function or without waiting for some event to be happen.
+--- Because we cannot rely some event to be triggered and then we can pass the template ref variable to that function and access it the component.
+--- SO "@ViewChild" provides us a way to access "template reference variable" directly in the component.
+--- As name suggest it can be use to select "Child" elements from Component's View/Template.
+--- So we can select any elements from that Component's view and access them inside a component class.
+
+    --> Accessing DOM elements from Component's View
+
+            import { Component, ViewChild, ElementRef } from '@angular/core';
+
+            @Component({
+            selector: 'app-example',
+            template: `
+                <input #inputRef type="text" placeholder="Enter text" />
+                <button (click)="logInputValue()">Log Input Value</button>
+            `,
+            })
+            export class ExampleComponent {
+            @ViewChild('inputRef') inputElement: ElementRef<HTMLInputElement>;
+            //Here we are accessing an "input" element  . we can pass the "template ref variable name" as "selector".
+            // "CSS" selectors cannot be pass as the "selector" for View Child. This will not work.
+
+            logInputValue() {
+                console.log(this.inputElement.nativeElement.value);
+                }
+            }
+
+
+    --> Accessing Child Components/Directives
+
+    --- It allows you to access and interact with a child component, directive, or DOM element in the parent component.
+    --- In below code you can access the Instance of an Child Component.
+    --- ViewChild will find the respective instance of an Component and will provide you in the class of an Parent Component.
+
+
+            import { Component, ViewChild } from '@angular/core';
+            import { ChildComponent } from './child.component';
+
+            @Component({
+            selector: 'app-parent',
+            template: `
+                <app-child #childComp></app-child>
+                <button (click)="callChildMethod()">Call Child Method</button>
+            `,
+            })
+            export class ParentComponent {
+            @ViewChild('childComp') childComponent: ChildComponent;
+
+            callChildMethod() {
+                this.childComponent.someMethod();
+                }
+            }
+
+            // OR instead of "selector" you can also pass the ClassName of an Component.
+
+            import { Component, ViewChild } from '@angular/core';
+            import { ChildComponent } from './child.component';
+
+            @Component({
+            selector: 'app-parent',
+            template: `
+                <app-child></app-child>
+                <button (click)="callChildMethod()">Call Child Method</button>
+            `,
+            })
+            export class ParentComponent {
+            @ViewChild(ChildComponent) childComponent: ChildComponent;  //// Passing "ChildComponent" as a Class selector instead of "template ref variable "
+
+            callChildMethod() {
+                this.childComponent.someMethod();
+                }
+            }
+
+    // ElementRef
+
+    --- ElementRef type is just a wrapper type.
+    --- We can import it from an "@angular/core".
+    --- Angular in the end will wrap the element it finds with help of @ViewChild selector in such an ElementRef object.
+    --- That's why It is generic type that  needs extra information about the type of value that will be wrapped by it here when using ViewChild.
+
+          export class ExampleComponent {
+            @ViewChild('inputRef') inputElement: ElementRef<HTMLInputElement>;
+            // Here we are wrapping "HTMLInputElement" with ElementRef.
+        
+            onSubmit() {
+                console.log(this.inputElement.nativeElement.value);
+                // "nativeElement" points to wrapped element . 
+            }
+        }
+
+// Using "viewChild" signal function.
+
+--- In previous section, we saw that how can we access the template variable with the help of @ViewChild decorator.
+--- Now here, In Angular 17.3, Angular team introduces a "viewChild" signal function.
+--- Yes, we can create signal with the help of "viewChild" signal function. It is imported from "@angular/core".
+--- It behaves same as the @ViewChild decorator.
+
+
+        // Code Snippet
+
+        import { Component, ElementRef, viewChild, ViewEncapsulation } from '@angular/core';
+        import { FormsModule } from '@angular/forms';
+        import { ButtonComponent } from '../../../shared/button/button.component';
+        import { ControlComponent } from "../../../shared/control/control.component";
+
+        @Component({
+        selector: 'app-new-ticket',
+        standalone: true,
+        imports: [ButtonComponent, ControlComponent, FormsModule],
+        templateUrl: './new-ticket.component.html',
+        styleUrl: './new-ticket.component.scss',
+        encapsulation: ViewEncapsulation.Emulated
+        })
+        export class NewTicketComponent {
+        // @ViewChild('form') form!: ElementRef<HTMLFormElement>;
+
+        // form = viewChild<ElementRef<HTMLFormElement>>('form');
+
+        form = viewChild.required<ElementRef<HTMLFormElement>>('form');
+
+
+        buttonComponentInstance = viewChild.required<ButtonComponent>(ButtonComponent);
+        // WE can also access the instance of an Component using viewChild function. Same as @ViewChild Decorator. 
+
+        onSubmit(title: string, ticketText: string) {
+            this.form().nativeElement.reset();
+            console.log(`Submitted!`);
+        }
+        }
+
+    --- Here, we can also have "required" method, which will guarantees that respective view will always be there .
+    --- If we hover over "form" variable, we will see below  type or return type of viewChild Signal Function.
+
+            "(property) NewTicketComponent.form: Signal<ElementRef<HTMLFormElement>>"
+    --- Here, we are passing "required" along with "ElementRef<HTMLFormElement>" as type. That's why we are getting appropriate type.
+    --- The default return type of "viewChild" function is unknown.
+    --- Also it is generic function so we can pass the type using "<>" bracket to specify the type which we are going to save in the signal.
+    --- Without required viewChild will return below type for "form" variable.
+            "(property) NewTicketComponent.form: Signal<ElementRef<HTMLFormElement> | undefined>"
+            ---"undefined" as in union because , there will no guarantee that respective element will present in to the view.
+            --- While "required" will gives you that guarantee that element always be there in template.
+    --- So whenever you are using "required", you should always careful about the selector that you are passing (Meaning that element must be present in the view), otherwise you will ran into the error.
+
+
+// ViewChild vs ContentChild
+
+--- In last section we have seen how the ViewChild decorator and viewChild function.
+--- In this section, we are going to see how can we select the "ContentChild".
+--- ViewChild is Only, use to select the child elements from a Component's View (Which are parts of your template).
+--- While ContentChild is used to select the "Content which is eventually going to render in the place of the placeholder(ng-content)".
+--- Using ContentChild we can get a hold of the Projected Content.
+
+--- Like ViewChild here also we need a  "template reference variable "  to select to the Element from a respective template.
+--- The important thing to keep in mind that we cannot add the  "template reference variable " in the Template where we have added a placeholder i.e  "ng-content".
+--- Because in the end it is just a place holder, where the content is going to be rendered .
+--- So we need to add the "template reference variable" where we are actually injecting the content.
+--- That place is nothing but the component's view where we are using the "selector of this component".
+--- And inside the selector when we are passing the content then in that place we can add the "template reference variable" to respective elements.
+--- Let's see how it works in action.
+
+
+    // Control Component (Where we have placeholder of "ng-content")
+
+                import { AfterContentInit, Component, ContentChild, ElementRef, inject, input, ViewEncapsulation } from '@angular/core';
+
+                @Component({
+                selector: 'app-control',
+                standalone: true,
+                imports: [],
+                template: `
+
+                        <label>{{label()}}</label>
+                        <ng-content select="input, textarea"></ng-content>
+                `,
+                styleUrl: './control.component.scss',
+                encapsulation: ViewEncapsulation.None, 
+                })
+                export class ControlComponent implements AfterContentInit{
+
+                @ContentChild('input') private control!: ElementRef<HTMLInputElement | HTMLTextAreaElement>;
+
+                ngAfterContentInit(): void {
+                    console.log('After content In it',  this.control.nativeElement)
+                }
+        }
+
+    // Parent Component (Where  we are injecting the content)
+
+            import { Component, ElementRef, viewChild, ViewEncapsulation } from '@angular/core';
+            import { FormsModule } from '@angular/forms';
+            import { ButtonComponent } from '../../../shared/button/button.component';
+            import { ControlComponent } from "../../../shared/control/control.component";
+
+            @Component({
+            selector: 'app-new-ticket',
+            standalone: true,
+            imports: [ButtonComponent, ControlComponent, FormsModule],
+            templateUrl: `
+            
+            <form (ngSubmit)="onSubmit(titleInput.value, textArea.value)" #form>
+            <app-control label="Title">
+                <input  name="title" id="title" #titleInput #input/>  //// "Adding "input"" as "template reference variable for content child"
+            </app-control>
+            <app-control label="Request" >
+                <textarea  name="request" id="request" rows="3" #textArea #input> </textarea>  //// "Adding "input"" as "template reference variable for content child"
+            </app-control>
+            
+            </form>
+            
+            `,
+            styleUrl: './new-ticket.component.scss',
+            encapsulation: ViewEncapsulation.Emulated
+            })
+            export class NewTicketComponent {
+            // @ViewChild('form') form!: ElementRef<HTMLFormElement>;
+
+            // form = viewChild<ElementRef<HTMLFormElement>>('form');
+            form = viewChild.required<ElementRef<HTMLFormElement>>('form');
+            buttonComponentInstance = viewChild.required<ButtonComponent>(ButtonComponent);
+
+
+            onSubmit(title: string, ticketText: string) {
+                this.form().nativeElement.reset();
+                console.log(`Submitted!`);
+                }
+            }
+
+
+        // Explanation
+
+        --- In above example, we are injecting a content from parent component to child component .
+        --- Now, as mentioned earlier in the child component we only have the "ng-content" as a placeholder i.e selector. Where eventually the content will be rendering.
+        --- There we can define the "template reference variable"  in the "parent component" on the content that we are injecting from parent to child.
+        --- Then we can use that "template reference variable" in the child component and access it inside the child component using  "@ContentChild" inside the "ngAfterContentInit".
+
+        --- @ContentChild will guarantees that the selected Content will always be accessible inside the "ngAfterContentInit".
+        --- Here also we are using "ElementRef" as generic type selector for accessing elements that we defined using template reference variable.
+
+        // Key Points to note in above example.
+
+        1) You can use the "same template reference variable name if you have "multiple selectors(Like "OR" condition)" specified in the ng-content"
+        --- You can see we have defined the "input" as template reference variable name for both"input and textarea element",
+            --- The reason behind it ism if you can see the child component's template where we have place the "ng-content" placeholder,
+            --- There we have specified multiple selectors i.e " <ng-content select="input, textarea"></ng-content>",
+            --- So after injecting the code the DOM will look like this
+
+            <form _ngcontent-ng-c4062816453="" novalidate="" class="ng-untouched ng-pristine ng-valid">
+            
+                <app-control _ngcontent-ng-c4062816453="" label="Title" class="control" ng-reflect-label="Title">
+                <label>Title</label><input _ngcontent-ng-c4062816453="" name="title" id="title">
+                
+                </app-control>
+                
+                <app-control _ngcontent-ng-c4062816453="" label="Request" class="control" ng-reflect-label="Request">
+                <label>Request</label><textarea _ngcontent-ng-c4062816453="" name="request" id="request" rows="3"> 
+                </textarea></app-control>
+                
+               </form>
+            --- Here , you can see we have different instance of "Control i.e Child component is created".
+            --- Because in our template code (See in example's template code), we are using different instances of "Control Component".
+            --- SO every time either we are using "input" or "textArea" .
+            --- Therefore we can us the "same template reference variable" name , because only of them is rendering in the single instance of an component.
+            --- However you can use "ContentChildren" if you have multiple elements that you want to inject and access from the single instance of an component.
+
+        2) Different template variable names for "ViewChild" and "ContentChild"
+        --- Make sure you can have a different template reference variable name for both "ViewChild" and "ContentChild".
+        --- Because if you trye to access the template reference variable of "ViewChild inside the Content Child " then you will get a error.
+
+    
+    // contentChild "signal function"
+
+    --- Similar to viewChild signal function, Angular also support "contentChild" as signal function.
+    --- The usage of "contentChild" is same as viewChild.
+    --- Kindly follow the below syntax for the reference.
+
+
+            // Control Component (Where we have placeholder of "ng-content")
+
+               import { AfterContentInit, Component, contentChild, ElementRef, inject, input, ViewEncapsulation } from '@angular/core';
+
+                @Component({
+                selector: 'app-control',
+                standalone: true,
+                imports: [],
+                template: `
+
+                        <label>{{label()}}</label>
+                        <ng-content select="input, textarea"></ng-content>
+                `,
+                styleUrl: './control.component.scss',
+                encapsulation: ViewEncapsulation.None, 
+                })
+                export class ControlComponent implements AfterContentInit{
+
+                private control = contentChild.required<ElementRef<HTMLInputElement | HTMLTextAreaElement>>('input');
+
+                ngAfterContentInit(): void {
+                    console.log('After content In it',  this.control().nativeElement)
+                }
+            }
+
+            // Parent Component (Where  we are injecting the content)
+
+            import { Component, ElementRef, viewChild, ViewEncapsulation } from '@angular/core';
+            import { FormsModule } from '@angular/forms';
+            import { ButtonComponent } from '../../../shared/button/button.component';
+            import { ControlComponent } from "../../../shared/control/control.component";
+
+            @Component({
+            selector: 'app-new-ticket',
+            standalone: true,
+            imports: [ButtonComponent, ControlComponent, FormsModule],
+            templateUrl: `
+            
+            <form (ngSubmit)="onSubmit(titleInput.value, textArea.value)" #form>
+            <app-control label="Title">
+                <input  name="title" id="title" #titleInput #input/>  //// "Adding "input"" as "template reference variable for content child"
+            </app-control>
+            <app-control label="Request" >
+                <textarea  name="request" id="request" rows="3" #textArea #input> </textarea>  //// "Adding "input"" as "template reference variable for content child"
+            </app-control>
+            
+            </form>
+            
+            `,
+            styleUrl: './new-ticket.component.scss',
+            encapsulation: ViewEncapsulation.Emulated
+            })
+            export class NewTicketComponent {
+            // @ViewChild('form') form!: ElementRef<HTMLFormElement>;
+
+            // form = viewChild<ElementRef<HTMLFormElement>>('form');
+            form = viewChild.required<ElementRef<HTMLFormElement>>('form');
+            buttonComponentInstance = viewChild.required<ButtonComponent>(ButtonComponent);
+
+
+            onSubmit(title: string, ticketText: string) {
+                this.form().nativeElement.reset();
+                console.log(`Submitted!`);
+                }
+            }
+
+        --- Here, we are "contentChild" signal. Similar to viewChild this function is also generic function which needs type otherwise it consider it as 'unknown' type of signal
+        --- By calling "required" function on signal we are ensuring that the respective content projection will happen .
+        --- As always we are reading the signal value by executing it.
+
+
+
+// Decorator-based Queries & Lifecycle Hooks
+
+--- Here, we will take a closer look at ngAfterViewInit and ngContentInit.
+--- What is idea behind using "ngAfterViewInit" ?
+--- In "ngAfterViewInit", you are guaranteed to have access to the elements that have been selected with view child, unless you of course specified some selector that can't be found.
+--- "ngAfterViewInit" guarantees that the template has been initialized and Angular therefore is able to select elements in there.
+
+--> Key difference when you are using "@ViewChild Decorator" and "viewChild function"
+--- There is a one major difference when you are querying the elements using "@ViewChild Decorator" and "viewChild function"
+--- When you use ""@ViewChild Decorator" to select the element and tries to access that element in "ngOnInIt", you get the  result as "undefined".
+--- While in "ngAfterViewInit" , you can get a hold of the expected output.
+--- While if you are using "viewChild" signal function , you will get hold of expected output in "ngOnInt" as well.
+
+--- This is the main difference that you need to keep in mind while using @ViewChild decorator and @ViewChild function.
+--- that decorator for selecting an element and storing it in a property and you then wanna do something with that element, you can only do so in after view Init
+    --- or any of your methods that are triggered from the template but not inside of NgOnInit because there it would still be undefined.
+
+--> ngAfterContentInit
+
+--- For "ngAfterContentInIt" things are bit different that "ngAfterContentInit"
+--- Here, we can access the content safely(For correct selector).
+--- ContentChild decorator or function do not produce a value inside "ngOnInit".
+--- Therefore inside the "ngAfterContentInit" we guaranteed to get of the values that we are selecting with content child decorator or signal function.
+
+--> Reference
+    https://angular.dev/guide/signals/queries
+
+
+
+// afterRender and afterNextRender
+
+--- These are rendering hooks , which are introduces in Angular 16.
+--- These hooks are not related component's lifecycle but more to the Application life cycle.
+--- Also unlike other lifecycle methods, we can access these methods inside the "constructor" of the component.
+
+    --> afterRender
+
+    --- afterRender will executing again and again.
+    --- Not for something has changes on the component, but if anything changes in the Overall application.
+    --- afterRender will execute a lot because it listens to all future changes.
+    --- AfterRender is locked over and over again whenever any change occurs.
+
+    --> afterNextRender
+    --- whereas, afterNextRender is not locked again.
+    --- afterNextRender will only be triggered for the next change anywhere in the entire application.
+
+--- The idea behind these hooks is is that they allow you to define functions that should be executed whenever anything changes anywhere in the entire Angular application
+    --- or after the next change anywhere in the entire Angular application.
+--- So here we always talks about the Application. Whereas other lifecycle hooks like ngOnInit and others ends on refer to the component to which they belong.
+--- whenever anything changes anywhere or afterNext change anywhere in your application, these two special hooks,
+
+    --> Reference
+    https://angular.dev/guide/components/lifecycle#afterrender-and-afternextrender
+
+
+// Signal Effects
+
+--- Signals are useful because they notify interested consumers when they change. 
+--- An "effect" is an operation that runs whenever one or more signal values change. 
+--- You can create an effect with the effect function.
+--- AS we learn that to whenever we read the value from a signal , the Angular setups the subscription in that place (Wherever we are reading that value.)
+--- However, this can good thing when you are reading the values in template. So if signal is updated those template part will rerendered and update with latest value.
+--- The downside is in the Typescript code if if we tries to read that values ini same manner it won't update them when signal changes.
+--- I know, we can use the "compute" function to achieve it. compute function will help Angular to setup the subscription with Signal so that we can received the latest and updated values from the respective signals.
+--- But, there is another important function that you can use here.
+--- That function is  "effect" function.
+--- We can import "effect" function from "@angular/core".
+--- We can use this "effect" function inside the "constructor."
+--- The "effect" function accepts a callback function , which executes when any signal changes . Basically the  changing the value of signal that we are using inside that callback function.
+--- By doing this Angular setups the subscription of signals in the component,so that we can received the notification of the updated signal values.
+--- Angular will automatically cleanup this subscription when that component should ever get removed from the DOM.
+--- Therefore "effect" is the another important feature along with the lifecycle hooks that we learned.
+
+        // Code snippet
+
+                import { Component, DestroyRef, effect, inject, signal} from '@angular/core';
+
+                @Component({
+                selector: 'app-server-status',
+                standalone: true,
+                // imports: [CommonModule],
+                templateUrl: './server-status.component.html',
+                styleUrl: './server-status.component.scss'
+                })
+                export class ServerStatusComponent {
+
+                currentStatus = signal<  'online' | 'offline' | 'unknown'>('online');
+                
+                private interval!: NodeJS.Timeout;
+                private destroyRef = inject(DestroyRef);
+
+                constructor() {
+
+                    effect(()=> {
+                        console.log('Signal Updated', this.currentStatus())
+                        // This line will get logged whenever "currentStatus" value changes.
+                        // effect should always be call inside the constructor.
+                    })
+
+                const interval = setInterval(()=> {
+
+                        const rnd = Math.random();
+                        if(rnd < 0.5) {
+                        this.currentStatus.set('online');
+                        } else if (rnd < 0.9) {
+                        this.currentStatus.set('offline');
+                        } else {
+                        this.currentStatus.set('unknown');
+                        }
+
+                    }, 2000);
+
+                    this.destroyRef.onDestroy(() => {
+                    clearInterval(interval);
+                    })
+                }
+
+                ngOnDestroy(): void {
+                    clearTimeout(this.interval);
+                }
+                }
+
+
+        --- Effects always run at least once. When an effect runs, it tracks any signal value reads. 
+        --- Whenever any of these signal values change, the effect runs again. 
+        --- Similar to computed signals, effects keep track of their dependencies dynamically, and only track signals which were read in the most recent execution.
+        --- Effects always execute asynchronously, during the change detection process.
+
+        --> Reference for more details 
+        https://angular.dev/guide/signals
+
+// Signal Effects Cleanup function
+
+--- When working with Signal effects, you sometimes might need to perform some cleanup work before the effect function runs again (e.g., to clear some timer or something like that).
+--- Angular's effect() allows you to do that!.
+--- It does provide you with an "onCleanup" hook which you can execute as part of your effect function to define what should happen before the effect code runs the next time:
+
+        effect((onCleanup) => {
+        const tasks = getTasks();
+        const timer = setTimeout(() => {
+            console.log(`Current number of tasks: ${tasks().length}`);
+        }, 1000);
+        onCleanup(() => {
+            clearTimeout(timer);
+        });
+        });
+    
+// Templates "@for loops" deep dive
+
+--- As we learned earlier about the "@for loops" in templates.
+--- Here, we will take a closer look at the it and  learn about the other features .
+--- The below syntax is only available, if you are using Angular version 17 or later.
+
+
+        // Code snippet
+
+        @for (item of items; track item.name) {
+        <li>{{ item.name }}</li>
+        } @empty {
+        <li>There are no items.</li>
+        }
+
+    --> @empty
+    --- @empty can be use to display fallback content if the provided iterable is empty.
+    --- In above example, if "items" array is empty then the block from @empty will get rendered in the UI.
+
+    --- Along with @empty there couple of variables that we can access within the scope of @for loop block ({} --> Between Curly braces of @for loop). 
+
+        --> $count	
+        --- Number of items in a collection iterated over
+        
+        --> $index	
+        --- Index of the current row
+
+        --> $first	
+        --- Whether the current row is the first row
+        
+        --> $last	
+        --- Whether the current row is the last row
+        
+        --> $even	
+        --- Whether the current row index is even
+        
+        -->$odd	
+        --- Whether the current row index is odd
+
+    --- These variables are always available with these names, but can be aliased via a let segment:
+
+        @for (item of items; track item.id; let idx = $index, e = $even) {
+        Item #{{ idx }}: {{ item.name }}
+        }
+
+
+    // Custom Two way binding
+
+    --- As we learn about the how we establish the two way binding.
+    --- However we can also build our Custom two data binding.
+    --- This custom two way data binding is very useful when you are having component communication between two components.
+    --- To understand this concept we will be referring to the below example.
+
+    --- In below example, we have a  'rect' component , which will accept the "size" from a parent (app) component.
+    --- This size contains the height and width . Based on this height and width the size of rectangle will change inside the rect component.
+    --- Also when we click on the rectangle , we must reset the size to the original size.
+    --- For that we will need to emit the event from child to parent to update 'size' from a parent.
+    --- Therefore, based on our learning, there should be one input which will take the size and there should one output will emit the size from a child.
+    --- Then we will handle that emit event inside a parent to update the size .
+    --- These are the steps that we can apply to update and reset the size , based on what we learned.
+    --- Now, you can say where is the two way binding ? And Why do we need it in this case ?
+
+    --- As we learned, two way binding is something where we can read and write the data.
+    --- In above sections , we used '[(ngModel)]' to accomplish the two way data binding.
+    --- Now, in our example,  we have to do something like this only, but that should happen between two components.
+    --- I.e We are planning to use custom two way binding.
+
+    --- We will see below code snippet and will try to understand how two way binding plays and important role here.
+
+        --> Code snippet
+
+                --> app.component.ts
+
+                    import { Component } from '@angular/core';
+                    import { RectComponent } from './rect/rect.component';
+                    import { FormsModule } from '@angular/forms';
+
+                    @Component({
+                    selector: 'app-root',
+                    standalone: true,
+                    templateUrl: `
+                    
+                    <div id="inputs">
+                        <p>
+                            <label>Width</label>
+                            <input type="number" step="1.0" [(ngModel)]="rectSize.width" />
+                        </p>
+                        <p>
+                            <label>Height</label>
+                            <input type="number" step="1.0" [(ngModel)]="rectSize.height" />
+                        </p>
+                        </div>
+                        <app-rect [(size)]="rectSize"/>
+
+                    `,
+                    imports: [RectComponent, FormsModule],
+                    })
+                    export class AppComponent {
+                    rectSize = {
+                        width: '100',
+                        height: '100',
+                        };
+                    }
+
+
+
+                --> rect.component.ts
+
+                import { Component, EventEmitter, Input, Output } from '@angular/core';
+
+                        @Component({
+                        selector: 'app-rect',
+                        standalone: true,
+                        imports: [],
+                        templateUrl:   `
+                        
+                        <div
+                            id="rect"
+                            [style.width]="size.width + 'px'"
+                            [style.height]="size.height + 'px'"
+                            (click)="onReset()"
+                            ></div>
+                        
+                        `,
+                        styleUrl: './rect.component.css',
+                        })
+                        export class RectComponent {
+
+                        @Input({ required: true }) size!: { width: string; height: string };
+                        @Output() sizeChange = new EventEmitter<{ width: string; height: string }>();
+
+
+                        onReset() {
+                            // this.size = {
+                            //   width: '100',   // Incorrect way to change the value of the reference of an Input. Sooner, This will lead to unexpected result
+                            //   height: '100',
+                            // };
+                        
+                            
+                            this.sizeChange.emit({
+                            width: '100',
+                            height: '100'
+                            })
+                        }
+                        }
+
+
+    --- Here in our example, 'size' is the input from rect component, where we are receiving the size from an app component.
+    --- @Input and @Output plays an important role in the custom two way data binding .
+    --- In the end two way data binding is the combination of accepting (Input) and updating(Output) the value.
+    
+    --> Important Note
+
+    --- Here the important note about the naming convention of an output variable.
+    --- We need to use specific pattern while deciding the name of an output variable.
+    --- Because that will help Angular to recognize and establish the two way data binding.
+    --- The variable name should be 'Input variable name' + 'change'.
+    --- In our example , it should 'sizeChange'.
+    --- This will tell angular that we need to use 'size' as a two way bindable property.
+    --- The output property name must be follow the above rule for a naming convention , then only two way binding will establish on the specified input property.
+
+    --- After doing this , now we have created 'size' as two way bindable property.
+    --- Now we have do one more thing in the parent component i.e where we are using the selector of this child component.
+    --- Here, instead of using property binding , we must have to change the syntax.
+    --- For example, in our case instead of [size] , we must change to the "[(size)]".
+    --- Because it is two way bindable property.
+
+    --- That's how you can build the custom two way bindable properties in angular.
+    --- This will help reduce the additional code that require where we can write the function inside a parent to listen the events from a child component.
+    --- Angular do the all heavy lifting for us.
+
+
+    // Custom two way data binding using "model" function.
+
+    --- In previous section, we saw that how can we implement the custom two way data binding using an Input and Output property.
+    --- However there is an alternative way to achieve the same in modern angular version.
+    --- Angular 17.2 and onwards versions provides the 'model' function.
+    --- The "model" is bindable signal function that helps you to build the custom data binding without having an additional code. It saves you the effort require for adding an Input and Output.
+    --- Let's see it in the action.
+
+
+                --> rect.component.ts
+
+                import { Component, model} from '@angular/core';
+
+                        @Component({
+                        selector: 'app-rect',
+                        standalone: true,
+                        imports: [],
+                        templateUrl:   `
+                        
+                        <div
+                            id="rect"
+                            [style.width]="size().width + 'px'"  //// Executing "size" modelSignal for reading the values. 
+                            [style.height]="size().height + 'px'"
+                            (click)="onReset()"
+                            ></div>
+                        
+                        `,
+                        styleUrl: './rect.component.css',
+                        })
+                        export class RectComponent {
+
+                         size = model.required<{ width: string; height: string }>();
+                         // model function returns the 'ModelSignal' with provided data type. In our case it is "ModelSignal<{  width: string;  height: string;}"
+                         // We can update this signal as well.
+
+
+                        onReset() {
+                          this.size.set({
+                            width: '100',
+                            height: '100'
+                            });
+                        }
+
+
+            --- In above code, you can see how we can use  the "model" signal to create custom two way data binding.
+            --- However, the code from the "app component" will remain as it is . There is no changed in app.component's html.
+            --- We already learned that , Even if are using signal as input we can pass the values to them as same as we pass for @Input decorator i.e Non-Signal value.
+            --- Here this "model" function is the combination of "@Input" and "@Output".
+            --- In our case, model function creates "size" as input property and also it make "size to sizeChange" in the background.
+            --- Therefore we can pass the value the size and also update it.
+            --- And, by updating the signal Angular will then automatically be notified about this update in the Component that provided the value for the two-way binding, so in the AppComponent.
+
 */
 
 
