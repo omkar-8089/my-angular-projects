@@ -3875,6 +3875,452 @@ i) Constructor
             --- Therefore we can pass the value the size and also update it.
             --- And, by updating the signal Angular will then automatically be notified about this update in the Component that provided the value for the two-way binding, so in the AppComponent.
 
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+******** Deep Dive - Directives *****************************************************************************************************************************************************************
+
+
+--- Till the time we learned a lot about the components.
+--- In this section  we will be taking a deep dive into the "Directives".
+--- Directives are "enhancements" for elements (Built-in or Components).
+--- They can change the configuration (attributes, properties) , styling or behavior of elements.
+--- Unlike components,  "Directives do not have templates".
+--- In other words, components are the directives with Templates.
+--- Sometimes components also enhance the elements with the component selector.
+--- For example, we learned about how to extend the built in HTML elements using css attribute selector (Button component example),
+--- where we have injected the "template" of the button component between the built-in button element.
+--- So components can also enhance the elements by bringing their own template.
+
+
+// Attribute Directive (ngModel)
+
+--- In previous sections we saw that how can we use ngModel .
+--- The main goal of using using ngModel to achieve the two way data binding.
+--- For that we have been using "[(ngModel)]" on the select, input or textarea elements, where we can read and update the value.
+--- The "ngModel" enhance these elements such that they support two way data binding through it, but it does not comes up with own template unlike component.
+--- Apart from this ngModel also provide some built in angular classes on element where we place the ngModel.
+--- There are different classes like "ng-pristine, ng-touched, ng-untouched, ng-dirty, ng-valid, ng-invalid ".
+--- Since these classes are starting with "ng" , we confirm that angular is adding these classes internally whenever we use ngModel on a particular element.
+--- Each of these classes have some different purpose based on the user interaction with that element.
+--- The attribute directives are responsible for changing the functionality or style of the element i.e appearance of that element without altering structure.
+--- Previously we learned that how can setup our custom two way data-binding.
+--- Just recap --> If we are having an input for example "size" and we are using "sizeChange" as "output event emitter" then we can simply consider/make the "size" property as two way bindable.
+    --- Therefore then the syntax will become [(size)] , which will help the angular that "size" property is two way bindable property and angular will treat that property according to it.
+--- According to this rule , now we can understand how  "[(ngModel)]" works i.e two way binding in angular.
+--- We can use "ngModel" as directive  as well, meaning if we do not wanted to use it for two way data binding (i.e If we do  not need of "[(ngModel)]").
+--- If we use "ngModel" on element then we can use above mentioned css classes , and based  upon the user interactions we can style the input dynamically .
+--- In the end , we can say that ngModel is an attribute directive which can help us to achieve the two way data binding or managing css classes by enhancing an input/select/textarea element.
+
+--- To understand the code of "ngModel", we have gone through the git hub repo of an angular.
+--- Where we have found that "[ngModel]" is an input property , where "(ngModelChange)" is an output event emitter.
+--- Hence , As per our rule or pattern we can achieve the two way data binding on "[(ngModel)]".
+--- We can called "ngModel" as an attribute directive, because we are adding it as an attribute to an element then it is enhancing/changing that element.
+--- Like it can property or event listing or two way binding features.
+
+    --> Reference
+        https://github.com/angular/angular/blob/main/packages/forms/src/directives/ng_model.ts 
+
+
+// Structural directives (ngIf, ngFor, ngSwitch)
+
+--- In Angular, structural directives are directives that change the structure of the DOM by adding or removing elements. 
+--- They differ from attribute directives in that they don't just modify existing elements—they can insert or remove elements based on conditions or iterate over data. 
+--- Structural directives use an asterisk (*) prefix as shorthand to indicate that they are modifying the structure of the DOM.
+--- In Angular 17 and above we do not use built in structural directive anymore, because they been replaced by the template features like "@for , @If".
+--- However, if we wish to use to it then we can use them directly.
+--- But if we are using standalone components then we need to import the "NgIf, NgFor, NgSwitch" from "@angular/common" to tell the angular that we are using it.
+--- Also you can import "commonModule" as well instead of separately importing them.
+
+--- 
+
+
+// Custom Directives (attribute)
+
+--- In previous part, we saw that  what are  attribute and structural directives .
+--- In this section, we will be learning about how can we create our structural directive.
+--- As we learned the directives are similar to the component but without template.
+--- So we can create same structure as we are creating for components.
+--- The main difference is about the decorator and selector.
+--- Here, we will be using "@Directive" decorator and the selector will the css attribute selector.
+--- We cannot use "element selector here" directly , because we wanted to enhance the element not to create an element.
+--- Though we can use "element selector with conjunction of CSS attribute selector" like "a[appSafeLink]" --> i.e "appSafeLink" attribute will only apply when the element is "a i.e anchor tag."
+
+
+--- Here, we are creating an custom directive . The directive will be placed on anchor element.
+--- So when we clicked on the link the directive will populate the confirmation message before redirecting to the external link.
+
+    --> Code snippet
+
+        // Directive code
+
+        import { Directive, input } from '@angular/core';
+
+            @Directive({
+            selector: 'a[appSafeLink]',
+            standalone: true,
+            host: {
+                '(click)': 'onConfirmLeavePage($event)',
+            },
+            })
+            export class SafeLinkDirective {
+                queryParam = input('myapp', {alias: 'appSafeLink'});
+            constructor() {
+                console.log('SafeLinkDirective is active!');
+            }
+
+            onConfirmLeavePage(event: MouseEvent) {
+                const wantsLeave = window.confirm('Do you want to leave the app?');
+                const address =  (event.target as HTMLAnchorElement).href; 
+                (event.target as HTMLAnchorElement).href = address + '?from=' + this.queryParam();
+                if (wantsLeave) {
+                return;
+                }
+                event?.preventDefault();
+                }
+            }
+
+        // Usage in "learning-resources.component.html"
+
+        <p>Helpful resources you might want to use in addition to this course.</p>
+            <ul>
+            <li>
+                <!-- <a href="https://angular.dev" appSafeLink queryParam="myapp-docs-link">Angular Documentation</a> -->
+                <a href="https://angular.dev" appSafeLink="myapp-docs-link">Angular Documentation</a>
+            </li>
+            <li>
+                <a href="https://academind.com/courses"  appSafeLink="myapp-course-link">Academind Courses</a>
+            </li>
+            <li>
+                <a href="https://www.google.com/search?q=angular"  appSafeLink="myapp-google-link">Google</a>
+            </li>
+            </ul>
+
+        --- In this example, we built the directive and also gone through the couple of features like inputs and how handle event on host element (Where we place our directive.)
+        --- Important thing that we learned that how can we simplify the usage of our directive.
+        --- Basically we have created an "queryParam" as input , but we had kept its alias name same as to the "selector" of the directive.
+        --- Hence you can see we can pass the values to directive directly and it will work same as it is.
+              <a href="https://angular.dev" appSafeLink="myapp-docs-link">Angular Documentation</a>
+
+
+        --> Apart from this you can also inject the host element reference into directives.
+        --- Basically that will gives you an reference to the host element so that you can perform operations using it.
+
+        --> Final code using both the solutions
+
+
+        import { Directive, ElementRef, inject, input } from '@angular/core';
+
+        @Directive({
+        selector: 'a[appSafeLink]',
+        standalone: true,
+        host: {
+            '(click)': 'onConfirmLeavePage($event)',
+        },
+        })
+        export class SafeLinkDirective {
+            queryParam = input('myapp', {alias: 'appSafeLink'});
+            hostElementRef = inject<ElementRef<HTMLAnchorElement>>(ElementRef);
+        constructor() {
+            console.log('SafeLinkDirective is active!');
+        }
+
+        onConfirmLeavePage(event: MouseEvent) {
+            const wantsLeave = window.confirm('Do you want to leave the app?');
+
+            // 1. Solution using event, which will generate on click of the host element.
+
+            // const address =  (event.target as HTMLAnchorElement).href; 
+            
+            // (event.target as HTMLAnchorElement).href = address + '?from=' + this.queryParam();
+            
+            
+            // 2. Solution by Injecting the HOST element Ref
+
+            const address = this.hostElementRef.nativeElement.href;
+            this.hostElementRef.nativeElement.href = address + '?from=' + this.queryParam();
+
+
+            if (wantsLeave) {
+            return;
+            }
+            event?.preventDefault();
+        }
+        }
+
+
+
+// Custom Directives (Structural)
+
+--- In previous section, we learned about creating an Custom Attribute directive.
+--- In this section, we will be learning about the Custom structural directive and couple of other things which revolve around it.
+--- The purpose of this custom structural directive is to show and hide the content based upon the condition.
+--- Similar to *ngIf.
+
+--- Let's first write a code and then we will be going through each and every thing that we are using to built this directive.
+
+
+    --> For example
+
+    // Auth.directive
+
+        import { Directive, effect, inject, input, TemplateRef, ViewContainerRef } from '@angular/core';
+        import { Permission } from '../auth/auth.model';
+        import { AuthService } from '../auth/auth.service';
+
+        @Directive({
+        selector: '[appAuth]',
+        standalone: true
+        })
+        export class AuthDirective {
+        userType = input.required<Permission>({ alias: 'appAuth' });
+
+        private authService = inject(AuthService);
+        private templateRef = inject(TemplateRef);
+        private viewContainerRef = inject(ViewContainerRef);
+
+        constructor() {
+            effect(() => {
+            if (this.authService.activePermission() === this.userType()) {
+                this.viewContainerRef.createEmbeddedView(this.templateRef);
+            } else {
+                this.viewContainerRef.clear();
+            }
+
+            })
+            }
+
+        }
+
+    //  Usage  (app.component.html)
+
+
+        <ng-template appAuth="admin">
+            <p>Only admins should see this !</p>
+        </ng-template>
+
+
+    --> Explanation 
+
+
+    --- In the above code snippet you can see different types of features or keywords .
+    --- We will go through it one by one to get the better understanding about the "Custom Structural Directive."
+
+    1) Ng Template
+
+    --- Now you will say , the structural directive should be append with "*".
+    --- Yes, that is the another way to add the structural directive and we will touch base it after this approach.
+    --- "ng-template" is the special template provided by an Angular and you can use it, inside your component to wrap some content.
+    --- In our case, this paragraph, which should not be shown on the screen initially. 
+    --- So whatever you put inside of an ng-template will not be rendered on the screen.
+    --- Instead the idea behind the "ng-template" is that you can define some content like this ("<p>" in our case) that eventually(After long time) be rendered onto the screen.
+    --- So that we can control when exactly that content show up on the screen instead of always showing it.
+    --- That's idea behind the ng-template.
+    --- It allows you to prepare some markup that should eventually be shown and you can control and we will soon control when exactly this wrapped markup, this paragraph here should be shown.
+    --- And structural directives always need such a template though this template can be added automatically behind the scenes if you use this asterisk (We will take closer look at this very soon).
+    --- Also you can use the built in directive similarly without asterisk (*).
+
+               <ng-template [ngIf]="'admin'">
+                    <p>Only admins should see this !</p>
+            </ng-template>
+
+    --- Basically "asterisk" is just adding an syntactical sugar for automatically adding this "ng-template" behind the scene (if we use *ngIf directly on a element like below)
+            <p *ngIf="'admin'">Only admins should see this ! </p>
+    --- Behind the scene angular will add this "<p>" inside the "ng-template" and will put the content inside init.
+             <ng-template [ngIf]="'admin'">
+                    <p>Only admins should see this !</p>
+            </ng-template>
+
+    2) Why are we adding "attribute directive" on ng-template not on "p" ?
+    --- But that's important, onto ng-template, not onto the element that should be rendered conditionally.
+    --- So we don't add it like an attribute directive onto the element that should be changed, but instead onto a template that contains the content that might eventually end up in the DOM.
+    --- So that's the first important step.
+    --- Basically as a part of the first step, we have put the "authDirective" on the "ng-template".
+
+    --- In the second step i.e inside the "authDirective" we will we deciding the what and where the content should rendered.
+    --- In the auth directive , we have been injecting two things.
+        1) TemplateRef
+        2) ViewContainerRef
+    --- Both can be imported from the "@angular/core"
+
+        "TemplateRef"
+    --- By injecting the "TemplateRef" you are telling the Angular that we want to hold the template i.e "ng-template" and implicitly (inherently) the content inside the template  .
+    --- So in our case there is only one element i.e <p>, but there might be the chances the template contains the long list of elements, that could be any markup.
+    --- Therefore, we can get the hold of template content using the "TemplateRef".
+    --- This is the super important step while creating a structural directive.
+
+        "ViewContainerRef"
+    --- This ViewContainerRef in the end is a reference to the place in the DOM where this template is being used.
+    --- We will see later how this place looks like and how the template gets injected at this place.
+
+
+    --- So the TemplateRef in the end gives you access to the content of the template you could say.
+    --- The ViewContainerRef gives you access to the place in the DOM where this directive is being used.
+    --- So where this template is being used, therefore in the end. 
+    --- And you need both pieces of information to tell Angular where to render what.
+
+        "createEmbeddedView"
+    --- This method is available on "ViewContainerRef".
+    --- We can use this method to tell the Angular to render some new content into a certain place in the DOM.
+    --- This method needs a "TemplateRef" as an argument.
+    --- Therefore we are passing "TemplateRef" as an argument to this function.
+    --- Basically this will tell the Angular to render the content between "ng-template" tag's where the directive is being used instead of ng-template.
+
+        "clear"
+    --- This method is available on "ViewContainerRef".
+    --- This will remove if any embedded view that has been rendered.
+
+        "important note"
+    --- The content inside the "ng-template"(i.e content between the "ng-template" tags) is not rendered by default.
+    --- So basically it is a part of your code in the template but it is not rendered on to the screen therefore it will not load initially on the page.
+    --- Instead , it will only show up there once you call create embedded view and you pass the template ref to create an embedded view.
+
+        "After loading the page"
+    --- By doing above thing we finally build our own structural directive.
+    --- As mentioned when we load our page, we cannot see the "content inside the "ng-template"" initially.
+    --- When you inspect, you will find below code at that place inside a DOM.
+
+            <!--bindings={
+            "ng-reflect-user-type": "admin"
+            }-->
+
+    --- Basically this is marker for an Angular , so that it internally is able to find the place where this content should be rendered if the specified directive decides that it must be rendered.
+    --- Now once you fulfill the conditions to rendered the directive the respective code will executed and when you inspect the DOM, you will see below code.
+
+        <p _ngcontent-ng-c1317779650="">Only admins should see this !</p>
+        <!--bindings={
+            "ng-reflect-user-type": "admin"
+            }-->
+
+    --- Therefore by using the marker , Angular can easily identify the place where it can rendered the content.
+
+    // Structural Directive and Syntactic Sugar (*)
+
+    --- As I mentioned earlier , we can use "*" before the directive instead of  using ngTemplate.
+    
+         <p *appAuth="'admin'">Only admins should see this !</p>
+
+    --- Basically adding an "asterisk" before the structural directive is common naming patter for Angular to identify and create an "ng-template" and wrapped the content inside init where we have put this structural directive.
+    --- Another important thing that this "*" syntax expects a proper binding.
+    --- Meaning it expects a typescript expression as value.
+    --- Hence you can see instead passing "admin" directly, we are passing "'admin'" as string value.
+    --- Because we do not "admin" variable which return a string value.
+    --- That's it for this "asterisk" syntax. Everything will taken care by Angular .
+    --- This just a shorter syntax to the implementation that we did it using "ng-template."
+
+
+
+// Directive Composition API
+
+    --- Angular directives offer a great way to encapsulate reusable behaviors— directives can apply attributes, CSS classes, and event listeners to an element.
+    --- The directive composition API lets you apply directives to a component's host element from within the component TypeScript class.
+
+        --> Adding directives to a component
+
+        --- You apply directives to a component by adding a hostDirectives property to a component's decorator. We call such directives host directives.
+        --- In this example, we apply the directive MenuBehavior to the host element of AdminMenu. This works similarly to applying the MenuBehavior to the <admin-menu> element in a template.
+       
+
+        --> For example
+
+            @Component({
+            standalone: true,
+            selector: 'admin-menu',
+            template: 'admin-menu.html',
+            hostDirectives: [MenuBehavior],
+            })
+            export class AdminMenu { }
+
+
+        --- When the framework renders a component, Angular also creates an instance of each host directive. 
+        --- The directives' host bindings apply to the component's host element. By default, host directive inputs and outputs are not exposed as part of the component's public API. 
+
+        --> Notes
+        --- Angular applies host directives statically at compile time. You cannot dynamically add directives at runtime.
+        --- Directives used in hostDirectives must be standalone: true.
+        --- Angular ignores the selector of directives applied in the hostDirectives property.
+
+
+        // Including Inputs and Outputs
+
+        --- When you apply hostDirectives to your component, the inputs and outputs from the host directives are not included in your component's API by default. 
+        --- You can explicitly include inputs and outputs in your component's API by expanding the entry in hostDirectives:
+
+            @Component({
+            standalone: true,
+            selector: 'admin-menu',
+            template: 'admin-menu.html',
+            hostDirectives: [{
+                directive: MenuBehavior,
+                inputs: ['menuId'],
+                outputs: ['menuClosed'],
+            }],
+            })
+            export class AdminMenu { }
+
+        --- By explicitly specifying the inputs and outputs, consumers of the component with hostDirective can bind them in a template:
+
+            <admin-menu menuId="top-menu" (menuClosed)="logMenuClosed()">
+
+        --- Furthermore, you can alias inputs and outputs from hostDirective to customize the API of your component:
+
+
+            @Component({
+            standalone: true,
+            selector: 'admin-menu',
+            template: 'admin-menu.html',
+            hostDirectives: [{
+                directive: MenuBehavior,
+                inputs: ['menuId: id'],
+                outputs: ['menuClosed: closed'],
+            }],
+            })
+            export class AdminMenu { }
+
+            <admin-menu id="top-menu" (closed)="logMenuClosed()">
+
+
+        // Adding directives to another directive
+
+
+        --- You can also add hostDirectives to other directives, in addition to components. This enables the transitive aggregation of multiple behaviors.
+        --- In the following example, we define two directives, "Menu" and "Tooltip". 
+            --- We then compose the behavior of these two directives in "MenuWithTooltip". Finally, we apply "MenuWithTooltip" to "SpecializedMenuWithTooltip".
+
+
+                    @Directive({...})
+                    export class Menu { }
+
+                    @Directive({...})
+                    export class Tooltip { }
+                    
+                    // MenuWithTooltip can compose behaviors from multiple other directives
+                    
+                    @Directive({
+                    standalone: true,
+                    hostDirectives: [Tooltip, Menu],
+                    })
+                    
+                    export class MenuWithTooltip { }
+                    // CustomWidget can apply the already-composed behaviors from MenuWithTooltip
+                    
+                    @Directive({
+                    standalone: true,
+                    hostDirectives: [MenuWithTooltip],
+                    })
+
+
+                    export class SpecializedMenuWithTooltip { }
+
+
+        --> Reference
+            https://angular.dev/guide/directives/directive-composition-api
+            --- You can refer to other details on the above reference link (Like Execution Order and Dependency injection).
+        
+        
+
+
 */
 
 
