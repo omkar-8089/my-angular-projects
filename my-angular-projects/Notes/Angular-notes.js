@@ -4318,6 +4318,204 @@ i) Constructor
             https://angular.dev/guide/directives/directive-composition-api
             --- You can refer to other details on the above reference link (Like Execution Order and Dependency injection).
         
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+******** DEEP Dive - PIPES ***************************************************************************************************************************************************************************
+
+
+--- Pipes are a special operator in Angular template expressions that allows you to transform data declaratively in your template. 
+--- Pipes let you declare a transformation function once and then use that transformation across multiple templates. 
+--- Angular pipes use the vertical bar character (|), inspired by the Unix pipe.
+
+
+// Built-in types
+
+--- Angular includes a set of built-in pipes in the @angular/common package:
+--- While using the custom pipes in latest angular versions either you can import the commonModule or specific pipe class name .
+--- In below reference link, you will find the list of built-in pipes in Angular along with their usage notes.
+
+    --> Reference
+    https://angular.dev/guide/templates/pipes#built-in-pipes
+
+// Custom Pipes
+
+--- So far, we learned about how to use the built-in Pipes, but sometimes we need to transform the values based on our need.
+--- There might be the some business cases at enterprise level applications where we need to transform the values as per business needs.
+--- In such situation , we can create our own custom pipes.
+--- Let's understand the implementation of it,  with example.
+
+
+    --> For example
+
+    --- In below example, we have created a custom pipe which basically transforms the value into "Fahrenheit" and  "Celsius" based on the input type.
+
+        // temperature.pipe.ts
+
+        import { Pipe, PipeTransform } from '@angular/core';
+
+        @Pipe({
+        name: 'temperature',
+        standalone: true
+        })
+        export class TemperaturePipe implements PipeTransform {
+
+        transform(value: string | number | null, inputType: 'cel' | 'fah', outputType?: 'cel' | 'fah'): string | null {
+            console.log('pipe value', value)
+            let val: number;
+            if(!value) {
+            return null;
+            }
+
+            if(typeof value === 'string') {
+            val = parseFloat(value);
+            } else {
+            val = value;
+            }
+
+            let outputTemp: string = '';
+
+            if(inputType === 'cel'&& outputType === 'fah') {
+            outputTemp = (val * (9 / 5) + 32).toFixed(2) + '' + '°F'
+                // outputTemp = (val * (9 / 5) + 32).toString() + '' + '°F';
+            } else if(inputType === 'fah' && outputType === 'cel') {
+            outputTemp =  ((val - 32) * (5 / 9)).toFixed(2) + '' + '°C';
+            // outputTemp =  ((val - 32) * (5 / 9)).toString() + '' + '°C';
+            } else {
+            outputTemp = val.toString() + '' + `${inputType === 'cel' ? '°C' : '°F'}`;
+            }
+            return outputTemp;
+        }
+
+        }
+
+        // Explanation
+
+        --- Here in this custom pipe , we are using "@Pipe" decorator.
+        --- Similar to "@Component" and "@Directive" decorator , the "@Pipe" Decorator also contains the "metadata".
+        --- Here we have "selector" , "pure" and "standalone" property for config.
+        --- This "@Pipe" decorator makes our class a  Pipe.
+        --- Alone this configuration will not make pipe executable. Because we need a  "transform" method to execute the pipe.
+        --- We can add this method on to the our class directly as well.
+        --- As we saw in the lifecycle hooks section, Angular provides us some "Interfaces" to implement on our class so that we cannot miss the required method on our classes.
+        --- Similar to that , we can import "PipeTransform"  interface from "@angular/core".
+        --- This "PipeTransform" interface forces us to add "transform" method on our class.
+        --- This "transform" method will automatically gets called by Angular  behind the scene when hook that pipe in our code for usage.
+        
+        "transform" method.
+        --- The transform method is the core function of an Angular pipe, defining the transformation logic that takes an input value and converts it into a desired output format. 
+        --- It’s part of the PipeTransform interface, which is implemented by custom pipes to specify how data should be transformed in the template.
+        --- The "first" argument is the value on which we are applying the PIPE.
+        --- Then after that we can pass as many as arguments to configure the pipe based on our need.
+        --- In our example, we have set the different arguments like inputType and outputType to make our transformation more configurable.
+
+
+    // Chaining of PIPE
+
+        --- In Angular, chaining of pipes means applying multiple pipes in sequence to an expression in the template. 
+        --- Each pipe transforms the data and then passes it to the next pipe, allowing you to perform complex formatting or transformations in a concise and readable way.
+
+        --> How to Chain Pipes
+
+        --- To chain pipes, use the | operator and specify multiple pipes, separated by |. Angular processes them from left to right, with each pipe receiving the output of the previous one.
+
+            --> For example
+
+            <p>{{ '2024-10-25T08:30:00' | date:'fullDate' | uppercase }}</p>
+
+            --- The date pipe formats the date into a human-readable string, such as "Friday, October 25, 2024".
+            --- The uppercase pipe then converts the formatted date string into uppercase: "FRIDAY, OCTOBER 25, 2024".
+
+
+    // Reference vs Primitive values
+
+    --- In previous example, we saw that how can we transform the "primitive" values like "string" , "number" or any other primitive data value.
+    --- However pipes are not limited to primitive values. We can also pass the objects and array for transforming them into some desired output.
+
+    --- In case of reference values i.e to "objects" and "arrays" there is precaution that we  need to take care.
+    --- Let's understand about it in detail.
+
+        --> For example
+
+        --- Suppose we have a "filterPipe" that filters an array of items based on a condition. This pipe is a pure pipe, meaning it only re-evaluates if it detects a change in the reference.
+
+                // Pipe code snippet
+
+                import { Pipe, PipeTransform } from '@angular/core';
+                @Pipe({
+                name: 'filter',
+                standalone: true,
+                pure: true // This is the default setting
+                })
+                export class FilterPipe implements PipeTransform {
+                transform(items: any[], searchTerm: string): any[] {
+                    return items.filter(item => item.includes(searchTerm));
+                    }
+                }
+
+
+                // Usage -- Component Code snippet
+
+                    export class AppComponent {
+                    items = ['apple', 'banana', 'cherry'];
+                    searchTerm = 'a';
+
+                    addItem(newItem: string) {
+                        this.items.push(newItem); // This modifies the array, but not its reference
+                        }
+                    }
+                // Component Template 
+                <div *ngFor="let item of items | filter:searchTerm">{{ item }}</div>
+
+
+        --- Pipes are pure by default.
+        --- Meaning they are adhere  to the caching mechanism.
+        --- In our example, When "addItem" is called, the items array is modified, but because the array reference remains the same, Angular does not trigger the filter pipe to run again. 
+        --- Because transform method is potentially executing  a lot. Meaning if anything changes in the component it executes again n again.
+        --- Therefore , by default Angular prevents this behavior by implementing caching mechanism.
+        --- Angular only triggers the transform method in the pipe when the "value" which is being passed to it changes.
+        --- Now you could say that, we have change the value because we have added a new item in the items array.
+        --- Technically Angular see's that the "items" array value is not modified. The value inside the "items" array is modified.
+        --- In javascript Non-Primitive values are having reference to Heap and in the Heap the actual data is being store.
+        --- Here when we perform the push method, we are changing the value inside the heap. Where the transform method refers to reference/address as  value from a callstack to heap.
+        --- Meaning that reference or address is not yet change , only the data inside the array is change.
+        --- Therefore Angular does not see this as a value change, because the "input" value that we are passing to pipe is just a pointer to the array or object in a memory not a actual value.
+
+            --> More on this
+            https://academind.com/tutorials/reference-vs-primitive-values
+
+        --- Now we have seen that what is issue , but not let's find the solution to overcome this issue.
+        --- Typically there are two solution that we can implement.
+
+        1) Create a New Reference:
+
+        ---  In addItem, instead of modifying the array directly, create a new array. This way, Angular detects the change in reference and re-evaluates the pipe.
+
+                addItem(newItem: string) {
+                this.items = [...this.items, newItem]; // Creates a new array reference
+                }
+        --- This will create a new reference/pointer/address for an array and that will consider it as a change in value.
+
+        2) Make the Pipe Impure:
+
+        --- Set pure: false in the pipe’s metadata. This will force Angular to check the pipe on every change detection cycle.
+        --- By making the pipe as impure will ignore the caching mechanism and Angular will execute the pipe's transform method on every single change detection happens in a component.
+        --- However this is not a recommended approach because this could lead to potential impact on your applications performance.
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
 
 */
 
