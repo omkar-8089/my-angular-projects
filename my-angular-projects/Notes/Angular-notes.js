@@ -4503,15 +4503,539 @@ i) Constructor
         --- However this is not a recommended approach because this could lead to potential impact on your applications performance.
 
 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+******** Dependency Injection **********************************************************************************************************************************************************
+
+--- So far we learned about Components, Templates, Directives and Pipes.
+--- In this section, we will be focusing on "Dependency Injection".
+--- We will be covering 
+    1) How Dependency Injection Works
+    2) Hierarchical Injectors and DI resolution process
+    3) Injection Tokens and Values
+    ... and many other subtopics.
+
+
+// Create a service
+
+--- Basically service is nothing but the class.
+--- "@Injectable" decorator makes this class a service.
+--- Adding "@Injectable" decorator makes this service injectable inside a component, Directive , Pipe or any other service.
+--- Like other Decorators , the "@Injectable" decorator also comes with some meta data.
+--- One of the important property among this meta data is  "providerIn".
+--- This "providerIn" property decides the instance creation level of the service.
+--- It can accepts  values between "root", "platform" or "any".
+--- Most of the time , we use "root" because that create instance of service at application level and we can use it in any part of the application.
+--- But we will come back to this configuration in upcoming sections.
+
+    --> Basic service creation code snippet
+
+        import { Injectable, signal } from '@angular/core';
+        import { Task } from '../tasks/task.model';
+
+        @Injectable({
+                providedIn: 'root'
+        })
+        export class TaskService {
+            tasks = signal<Task[]>([]);
+            constructor() { }
+        }
+
+
+// HOW Not to PROVIDE Service.
+
+--- Now we have saw how to create a service. Now we will see how to not use it.
+--- Yes, you heard it right,because before starting using it , we must know about how we should not use it.
+
+--> We should avoid creating a instance of Service class as we create instance of Class
+--- As we learned in the JS,If we want to create any instance of service we use "new" keyword with class name.
+--- But that's not the practice we should follow in case of services.
+--- Because the main goal of services to create a central location where we can leverage it to establish the communication between components, directives and other services.
+--- So if we follow the below approach that will create the instance of "service" limited to that component.
+--- And if we set some data in the service and tries to access in the another component we will not  be able to get it.
+--- Because below syntax will create the different instance for every component/directives/other services.
+
+
+                import { ExampleService } from './example.service';
+
+                export class SomeComponent {
+                private exampleService = new ExampleService(); // Direct instantiation, bypassing DI
+
+                constructor() {
+                    this.exampleService.someMethod();
+                    }
+                }
+
+--- In this code snippet, we are using Direct instantiation for creating service instance.
+--- Angular provides a better and ideal way for creating a service instance, that is called "Dependency injection".
+--- We will check that in upcoming section, but as of now we are clear about that we must not using "Direct instantiation" for creating service instance.
+
+
+
+// Dependency Injection.
+
+--- In Angular, Dependency Injection (DI) is a core design pattern used to provide classes (dependencies) to other classes or components.
+--- Basically a component or any class which require some dependency from other classes, rather than relying on them to create dependencies themselves
+--- So Angular helps us to complete that dependency through the Dependency Injection .
+
+    --> Code snippet
+
+        import { Component, OnInit } from '@angular/core';
+        import { DataService } from './data.service';
+
+        @Component({
+        selector: 'app-example',
+        template: `
+            <ul>
+            <li *ngFor="let item of data">{{ item }}</li>
+            </ul>
+        `
+        })
+        export class ExampleComponent implements OnInit {
+        data: string[] = [];
+
+        // Inject DataService through the constructor
+        constructor(private dataService: DataService) {}
+        // This is shorthand to create variable through access specifier by providing a name inside a constructor.
+        // "DataService" is the type of Dependency that our component is looking for i.e Injection Token.
+        // Angular will create the dependency of "DataService" type and store it inside a "dataService" variable.
+        // This way we can implement the dependency injection and the instance which is being created by Angular is now available across the APP .
+
+        ngOnInit(): void {
+            this.data = this.dataService.getData();
+            }            
+        }
+
+        // Alternative syntax
+
+        --- Most of the developers are using the "constructor" approach for injecting the dependency.
+        --- However there is another way of Injecting the Dependency inside a class by using "inject" function.
+        --- The "inject" function can be imported from "@angular/core".
+
+        --> Code snippet
+
+            import { Component, inject, signal } from '@angular/core';
+
+            import { TaskItemComponent } from './task-item/task-item.component';
+            import { TaskService } from '../../services/task.service';
+
+            @Component({
+            selector: 'app-tasks-list',
+            standalone: true,
+            templateUrl: './tasks-list.component.html',
+            styleUrl: './tasks-list.component.css',
+            imports: [TaskItemComponent],
+            })
+            export class TasksListComponent {
+            
+            private taskService = inject(TaskService);
+            // This "inject" function will request Angular to resolve the dependency with Type i.e Injection Token of "TaskService",
+            
+            }
+
+
+// Injectors in Angular
+
+
+--- As of now we have learned about how to request for an instance using Dependency Injection.
+--- Now, we will be learning about the injectors in the Angular.
+--- In above example, we have saw that we can use the "@Injectable {providerIn: 'root'}" to make our about the DI to Angular.
+--- However there are different ways to Inject the service.
+--- Angular injectors use a hierarchical structure that allows different components and modules to have different dependencies based on their needs and scopes.
+
+--- Please find the below levels of Hierarchy of Dependency Injection
+--- In below diagram you can see different levels of Injector or Hierarchy of Injectors.
+--- The idea behind the injectors is that Angular has them to register values that can be requested by components, directives or services.
+--- Basically, we as a developer must make "Angular", aware of the things(like services) that should be Injectable. 
+--- Thats why these "things"(Like services) must be register with one of its injectors. 
+--- So when we inject any service or other things then Angular look for their values within these injectors.
 
 
 
 
 
+                         ____________
+                        |            |
+                        |   NULL     |      //// This is when , we do not specify the provider for service i.e We did not specify the service in any one the specified Injectors.
+                        |  Injector  |      //// That's why Angular does not found any Injector and returns "NULL" and we get the error in console "NullInjectorError: No provider for Service!"
+                        |____________|      //// So when we inject any service any request for its value and if Angular does not find this service in the injector then it throws an error.
+                            |               //// Basically this is the fallback when Angular does not found any register value when component/directives/services request for any.
+                            |             
+                            |             
+                         ___|_________
+                        |             |
+                        | Platform    |     //// The Platform Environment Injector in Angular is a top-level injector created for the entire Angular runtime platform.
+                        | Environment |     //// It stands above the root injector and plays a critical role in providing core platform-level services that can be shared across multiple Angular applications running on the same platform (e.g., a browser).
+                        |  Injector   |     //// In "main.ts" we can bootstrap multiple Applications and it would then be platform injector. Then it could provide a single instance of service for multiple independent applicatios.
+                        |____________ |     //// You can also achieve the same by using them "providerIn: 'platform'".
+                            |
+                            |
+                            |
+                            |___________________________________________________________
+                                                                                        |
+                                                                                        |
+                                                                                        |
+                                                                                        |
+                                                                                        |
+                                                             ___________________________|___________________________________                          
+                                                            |                                                              |
+                                                            |                                                              |
+                                                       _____|________________                                    __________|_________  
+                                                      |                      |                                  |                    |
+                                                      | Application Root     |                                  | Module Injector    |
+                                                      | Environment Injector |                                  |                    |
+                                                      |______________________|                                  |____________________|
+                                                            |__________________________________________________________|
+                            ---- For most of the application we use the root level injector.|                   --- Module level injector comes when we are working with NgModules
+                            ---- Either we can use "providerIn:'root'"                      |                   --- We specify the service in the "providers" of the respective module.
+                                                                                            |                   --- Then Angular register that service value at that module level.
+                                                                                            |
+                                                                                            |
+                                                                                            |
+                                                                                            | 
+                                                                                            |
+                                                                                            |
+                                                                                            |
+                                                                                            |                                                                
+                                                                                            |
+                                                                                    ________|______________
+                                                                                    |                      |
+                                                                                    | Element   Injector   |
+                                                                                    |                      |
+                                                                                    |______________________|
+                                                                                            |
+                                                                                            |
+                                                                                        COMPONENT
+
+                                                                        ---- Whenever we inject the service at the component level.
+                                                                        ---- Angular first checks its registration or register value at "Element Injector"
+                                                                        ---- Component reaches out first to the Element Injector for request a dependency and if it does not get from there it moves
+                                                                                --- to "Application Root or Module injector"
+                                                                        --- And If it does not get from there then it moves to "Platform Environment Injector",
+                                                                        --- And If it still does not get from there then it moves up to "NULL Injector" and gets a Error.
+                                                                        --- Then you can see that Error in console "NullInjectorError: No provider for Service!"
+                                                                        --- This error means that, we have requested an Instance from a component for a service but we got no provider for it.
+                                                                        --- And that's a job of the "Null Injector."
+                                                                        --- It generates those errors in case we're requesting something which we're not providing anywhere,
 
 
 
+    // Multiple ways to Provide a Service
+
+    --- As of now we have learned that we can provide the services using "providerIn: 'root'".
+    --- However there are alternative ways to provide the service.
+    --- Basically  by providing the service using "providerIn: 'root'" register an Injectable "thing" (thing can be service or any thing which can be injectable) with  the "Application Root Environment Injector"
+    --- Therefore, "ALL" components, directives, services ets. can request the value (eg, an instance of the Task Service in our example.)
+    --- Another alternative way to provide the service is using using "bootstrapApplication" function.
+    --- Initially we learned about this function, basically this function accepts an Component that we want to bootstrap but  it also accepts an configuration object as a second parameter.
+
+            --> Code snippet
+
+            // bootstrapApplication(AppComponent, {
+            //   providers: [TaskService]
+            // })
+            //   .catch((err) => console.error(err));
+
+            --- The configuration object basically contains "providers" as a property.
+            --- This property accepts an Array of "things" that we want to inject at the Application root level.
+            --- By adding "TaskService" in providers array , we are achieving the same that we were doing using "@Injectable( {providerIn:'root'})"
+            --- So now the "TaskService" is register at the "application root environment injector." but now by using this configuration object on bootstrapApplication.
+
+
+
+    // Important Difference between Registering the service using  "@Injectable( {providerIn:'root'})" vs "// bootstrapApplication(AppComponent, {providers: [TaskService]})"
+
+    --- When we use the configuration object to register our service at the Application Root environment Injector , Angular does not provide "Tree Shaking".
+    --- Tree shaking means Angular tries to optimize the code as much as possible , once we prepare it for Deployment.
+    --- During this optimization process , Angular tries to throw away any code that's not being used or that's at least not needed initially when the APP starts.
+    --- Now, when you register your injectable value, your TasksService with this providers array here, and you therefore add this import here, it will always be included in that initial code bundle
+        --- that is generated by Angular because Angular sees that it's needed right from the start here, in this very first code that executes when the app starts.
+    --- Now if that service is only require when particular module loads(Lazy loading) then in that case by using approach we are unnecessarily including it from the Initial Bundle even though it is not require initially.
+
+    --- However for "@Injectable( {providerIn:'root'})" that is not the case.
+    --- optimization tools can perform tree-shaking, which removes services that your application isn't using. This results in smaller bundle sizes.
+    --- That's why it's typically recommended to use this approach instead of using this providers array.
+
+    // Element Injector.
+
+    --- In previous sections, we learned about the Platform, Root and Module level Injector.
+    --- In this section, we are are learning  about the "Element Injector".
+    --- The element injector is special type of an Injector, which is closely ties with DOM elements (Components and Directive in the END).
+    --- Worth to note that the element injector does not applies to "Injecting service into Service", because service is not a DOM Elements.
+    --- Element injector is only applies to Components and Directive in Angular Injector Tree looks up.
+    --- Now we need to include the "service" inside the "providers" array of the "@Component" metadata.
+
+        --> Code snippet
+
+        import { Component } from '@angular/core';
+
+        import { NewTaskComponent } from './new-task/new-task.component';
+        import { TasksListComponent } from './tasks-list/tasks-list.component';
+        import { TaskService } from '../services/task.service';
+
+        @Component({
+            selector: 'app-tasks',
+            standalone: true,
+            templateUrl: './tasks.component.html',
+            imports: [NewTaskComponent, TasksListComponent],
+            providers: [TaskService] //// Element Injector
+        })
+        export class TasksComponent {}
+
+        --- And the idea behind this provider's array here is that it allows you to set up values that should be injectable, that are tied to the element injector that belongs to this component.
+        --- Now all child components, so all components, and elements used in the template of the tasks component will also have access to that element injector.
+        --- However other components, for example "AppComponent" would not have access to it.
+        --- Because APP component is not a part of child of component of TaskComponent.
+        --- Hence "TaskService" is restricted to the "TaskComponent" component tree.
+        --- All the components from the component tree would have access to the one and same instance of TaskService.
+        --- Now we have "TaskComponent" is having "NewTaskComponent" and "TaskListComponent" as child component.
+        --- As of now "NewTaskComponent" and "TaskListComponent" will be having access to the one and same instance of the TaskService.
+        --- But now if we add the "TaskService" inside the "providers" array of the "TaskListComponent", then that element injector will create its own instance for that service against it.
+
+
+        --> Two important things that you keep in Mind while using this Approach.
+
+        1) When you add the "service" inside the configuration object of the "@Component" then that service instance will gets available to that component and its child components.
+            Other component i.e components are not part of hierarchy of this component would not able to access that instance.
+        2) As mentioned above, the element injector ties to the DOM elements.
+            So basically it creates an Instance with respective to that DOM element only.
+            Meaning if you have multiple component instances then each instance will be having its own service instance.
+            
+            --> Code snippet
+                <app-task />
+                <app-task />
+
+            --- Here we are using "Task component" , twice .
+            --- Each and every instance of "TaskComponent" will create its own Injector and Instance.
+            --- Both instance will be different from each other.
+            
+            
+    // Injecting Services into Service
+
+    --- While injecting the services into the another services make sure that service must have either "Module level Injector" or "Application Root environment Injector".
+    --- Because if you register that service at Element injector and tries to access within the other service then you will get the error.
+    --- The reason behind that , we already know that Element level Injector are ties to the that Element (In case of Components and Directives), but here services are not a element i.e they are not a part of DOM .
+    --- So whenever you have to inject any service within other service it must be register at "Application Root Environment Injector" or "Module Level Injector".
+    --- Therefore ensure, whenever we are accessing any service into another , that service is either using "@Injectable( {providerIn: 'root'})" or at "bootstrapApplication" function's configuration object inside main.ts.
+
+
+    // Dependency Injection "Behind the scenes"
+
+    --- As of now, we learned about the injector tree, Dependency Injection.
+    --- In this section, we will be learning about how the dependency Injection works behind the scenes.
+    --- Basically, How services or Injectable values are registered with Angular.
+    --- Here, we will be learning about What happens behind the scene when we register the a service.
+    --- For that we will be considering  a root level modular approach where we can also register the services using providers array.
+
+        // Code snippet in "main.ts"
+
+        --> Shorter way
+
+                bootstrapApplication(AppComponent, {
+                    providers: [ TaskService]
+                    })
+                .catch((err) => console.error(err));
+
+        --> Longer way (What happens actual behind the scenes)
+
+        export const TaskServiceInjection = new InjectionToken<TaskService>('task-service-desc');
+                                            // InjectionToken is generic class , you will need specify the type of "Injection token"
+                                            // If you do not specify the class name or type that you wanted to be use, you will get an error in all the places where you are planning to Inject this  token.
+                                            // Because the default type is 'unknown'.
+                                            // In this case, you would tell TypeScript which kind of value will be provided through that token. And in that case, that will be a value of type TasksService, since we're providing an instance of this "TaskService class"
+
+            bootstrapApplication(
+                AppComponent,
+                {
+                    providers: [
+                        {
+                            provide: TaskServiceInjection, useClass: TaskService
+                        }
+                    ]
+                }
+            )
+
+
+        --- In general, we are using the shorter way of registering the service at the module level.
+        --- Behind the scene , Angular basically creates an "provider" object , which contains "provide" property.
+        --- Along with "provide" property, there are other "use" properties also, like "useClass", "useExisting" ,"useValue", "useFactory", "deps", "multi" and so on ..
+        --- The idea behind this provide property is that it registers the so-called injection token of the injectable thing you are trying to register, so of the service, you are trying to register.
+        --- The idea behind the "Injection Token", is that it is act as the identifier of the injectable thing.
+
+        --- In first code snippet i.e in Shorter way the "The name of service class is token".
+        --- That's why when you use the "inject" function and pass the class name of the service, that class name can consider as "Injection Token".
+
+                private taskService = inject(TaskService);
+
+                --- When you hover on the "inject" function you can see the below details.
+
+                (alias) inject<TaskService>(token: ProviderToken<TaskService>): TaskService (+6 overloads)
+                import inject
+                @param token — A token that represents a dependency that should be injected.
+
+                @returns — the injected value if operation is successful, null otherwise.
+
+                @throws — if called outside of a supported context.
+
+        --- SO by providing the "service class" name we tells Angular that we wanted to Inject this service and you can consider class name of the service as Injection Token.
+
+
+        --- However in the Longer way (manually configuring everything) we are creating our own custom token.
+        --- Yes we can create and register our own Token as well using built in "InjectionToken" class (imported from @angular/core).
+        --- This class accepts and token description, which can be anything . This description helps during debugging.
+        --- Task Description just some identifier that can help with debugging error messages, for example.
+
+        --- After registering the injection token, now we can add this  "TaskServiceInjection" as "provide" in providers array.
+        --- Now as mentioned above, we have different "use" properties.
+        --- Here, our goal is to inject the Service class. Then we must use the "useClass" property.
+        --- Then we can simply pass the "useClass: TaskService" i.e class of the service.
+
+        --- By doing all these steps we can manually configure the custom injection for the service in our application.
+
+        --- Now you will start getting error in the application wherever you have injected the "TaskService".
+        --- Because now you have generated your own custom token, and in our code we are using service class as Injection token. 
+        --- Now Angular is not able to find out this injection token s register anymore  and it throws the "No provider , NullInjector" error.
+
+        --- To resolve this issue we need to make below changes.
+        --- As we are having two alternate ways to inject the service 
+            1) Using Constructor
+            2) Using inject function
+
+
+            1) Using Constructor
+            --- Using custom injection token in the constructor is not straight forward like inject function.
+            --- We will need to use "@Inject" decorator whenever we are doing the custom token injection.
+            --- This is not  "inject" function, it is "@Inject" decorator.
+            --- Then we can pass the service token to that decorator function and then we can define the type as  "TaskService" because in the end we are expecting the instance of "TaskService" class.
+
+                // Error for below code snippet
+
+                constructor(private taskService: TaskServiceInjection) { }
+                --- We cannot use this custom token directly as Type definition. Though it would work when we are following a shorter path.
+                --- Because we will get a type error
+                        //Error "'TaskServiceInjection' refers to a value, but is being used as a type here. Did you mean 'typeof TaskServiceInjection'?"
+
+                // Solution
+                constructor(@Inject(TaskServiceInjection) private taskService: TaskService) { }
+
+
+            2) Using 'inject'
+
+            private taskService = inject<TaskService>(TaskServiceInjection);
+            // We have imported "TaskServiceInjection" that we have created in main.ts
+            
+
+    // Injecting other values (NOT Services)
+
+    --- In previous section, we learn about the how can we inject the custom token for a services.
+    --- However as mentioned we cannot only Inject the services , We can have a other things as well that we can inject.
+    --- Now, we will be learning about how can we create a Custom injection token for some data and we can inject the same into the component.
+
+    --- In below example, we are creating TaskOptions and then by registering the custom token , we are injecting the it into TaskList and TaskItem component i.e Injecting at Element Injector.
     
+    
+        // Code snippet
+
+            --> Custom token injection code
+
+                export const TASK_STATUS_OPTIONS = new InjectionToken<TaskStatusOption>('task-status-option');
+                // 'TASK_STATUS_OPTIONS' is a custom token Injection that we have created. Usually we use naming convention in CAPS .
+                // As learned, we have specified the Type of the Injection token i.e "TaskStatusOption" 
+
+                    type TaskStatusOption = {
+                        value: 'open' | 'in-progress' | 'done';
+                        taskStatus: TaskStatus,
+                        text: string
+                    }[];
+
+                    export const TaskStatusOptions: TaskStatusOption = [
+                    {
+                        value: 'open',
+                        taskStatus: 'OPEN',
+                        text: 'Open'
+                    },
+                    {
+                        value: 'in-progress',
+                        taskStatus: 'IN_PROGRESS',
+                        text: 'In-Progress'
+                    },
+                    {
+                        value: 'done',
+                        taskStatus: 'DONE',
+                        text: 'Completed'
+                    }
+                    ];
+
+                    export const taskStatusOptionsProvider: Provider = {
+                        provide: TASK_STATUS_OPTIONS, //// Here, we are adding our custom token as provide
+                        useValue: TaskStatusOptions     //// Since, we are Injecting a array of task options so passing it as a Task value.
+                    }
+                    // Here we have created an Object that we provides in the provider array,
+                    --> Important
+                    --- Here , we are using  "useValue", because we are simply returning a "array" i.e 'TaskStatusOptions'.
+                    --- It is not a class , so we do not want to instantiate , it is plain value.
+                    --- Hence we are using "useValue" instead of the "useClass".
+
+            -->  Usage
+
+                    // TaskList Component
+
+                    import { Component, computed, inject, signal } from '@angular/core';
+                    import { TaskItemComponent } from './task-item/task-item.component';
+                    import { TaskService } from '../../services/task.service';
+                    import { TaskServiceInjection } from '../../../main';
+                    import { TASK_STATUS_OPTIONS, taskStatusOptionsProvider } from '../task.model';
+
+                    @Component({
+                            selector: 'app-tasks-list',
+                            standalone: true,
+                            templateUrl: './tasks-list.component.html',
+                            styleUrl: './tasks-list.component.css',
+                            imports: [TaskItemComponent],
+                            providers: [taskStatusOptionsProvider]   //// Injected "taskStatusOptionsProvider" at Element Level Injector. Now it has been register and available for its child components as well.
+                    })
+                    export class TasksListComponent {
+                        private taskService = inject<TaskService>(TaskServiceInjection);
+                        taskStatusOptions = inject(TASK_STATUS_OPTIONS);
+                        // By injecting 'TASK_STATUS_OPTIONS' , we will be getting a value that we have specified in the "useValue". Now we can use that value inside our component.
+                    }
+
+                    // Task Item Component (It is child of Task List component , so same instance can be  use in it.)
+
+                    
+                        import { Task, TASK_STATUS_OPTIONS, TaskStatus } from '../../task.model';
+                        import { TaskService } from '../../../services/task.service';
+                        import { TaskServiceInjection } from '../../../../main';
+
+                        @Component({
+                            selector: 'app-task-item',
+                            standalone: true,
+                            imports: [FormsModule],
+                            templateUrl: './task-item.component.html',
+                            styleUrl: './task-item.component.css',
+                        })
+                        export class TaskItemComponent {
+                        task = input.required<Task>();
+                            private taskService = inject<TaskService>(TaskServiceInjection);
+                            taskStatusOptions = inject(TASK_STATUS_OPTIONS);
+                        }
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+******** Change Detection -  Deep Dive *************************************************************************************************************************************
+
+--- So far we learned about core things about the Angular.
+--- In this section, we will be learning about the "Change Detection" in Angular, where are covering below topics and its subtopics
+
+    --> What is Change Detection ?
+    --> Understanding Angular's change detection Mechanism.
+    --> Using the OnPush Strategy.
+    --> Change Detection & Signals
+    --> Going Zoneless (Get rid of zone.js in certain circumstances)
 
 
 
