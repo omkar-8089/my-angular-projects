@@ -1643,6 +1643,8 @@ https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
             --- This pattern of selecting an element by attribute is used if you wanna extend a built-in element.
             --- Whenever you're building a brand new component that just wraps a bunch of built-in elements but doesn't really replace one,you should use the element selector as we did it before (Element i.e Type selector).
 
+            --> Stackblitz 
+                https://stackblitz.com/edit/stackblitz-starters-qnkk9j?file=package.json 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // Content-Projection
@@ -1741,6 +1743,9 @@ https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
     --- The ngProjectAs directive enables you to specify a custom identifier for the projected content. 
     --- This is especially useful when you have multiple <ng-content> elements within a component, and you want to differentiate between them.
     --- You can provide a specific name for the content being projected, allowing the parent component to identify and use that content appropriately.
+    --- When we use the "ngProjectAs", it tells the Angular to ignore the default content resolution algorithm based on the tag, attribute, css Name and it makes Angular treat as a selector.
+    --- Only the string defined as a value for the ngProjectAs attribute.
+    --- Basically whichever the value that we puts as a "ngProject" , Angular will start looking for its match in a component where we are using "ng-content"
     --- ngProjectAs, that allows you to specify a CSS selector on any element.
     --- Whenever an element with ngProjectAs is checked against an <ng-content> placeholder, Angular compares against the ngProjectAs value instead of the element's identity:
 
@@ -1773,6 +1778,11 @@ https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
             <p>Welcome to the example></p>
         </div>
         </custom-card>
+
+    --- You can also do the content re-projection , Basically when content project in one component has to be kind of propagated or projected into another one.
+    --> Re-projection is only work at first level and it gets ignored by the nested levels. To make this workable end to end you have to use "ngProjectAs" attribute. 
+
+    // Example --> https://github.com/DMezhenskyi/angular-ng-content-demo/tree/solution
 
 
 
@@ -5036,6 +5046,733 @@ i) Constructor
     --> Using the OnPush Strategy.
     --> Change Detection & Signals
     --> Going Zoneless (Get rid of zone.js in certain circumstances)
+
+
+// Understanding How Angular Performs Change Detection mechanism.
+
+--- We have our component tree and Angular wraps that entire tree.
+--- In the end, it wraps your entire application with a so-called zone, which is a feature that's provided by Zone.js.
+--- Zone.js is a library which is maintain by Angular team and it is heavily used in Angular.
+--- Because Zone.js is responsible for notifying Angular about the user events, expired timers etc.
+--- These events are responsible for changing something on the pages which subsequently reflected on the screen.
+--- For example, if user click the buttons and there is a listener to that event then Angular get's notified about that and the it's change detection process starts.
+--- Once change detection process starts, then it visits all components in the entire application no matter where that clicked occurred.
+
+--> Note
+--- Change detection will only run, if there was some event listener set up for that button click.
+--- It will NOT run for any random event happening anywhere on the page if no one is listening.
+
+--- When Angular starts revisiting all components, it checks for Template binding (String interpolation, Property Binding) and validate if it produces new value (Different than previous one).
+--- And If that's case, Angular updates the real DOM with a new value.
+--- That's how change detection works in Angular Application by Default.
+
+
+// Change Detection During development (ExpressionChangedAfterItHasBeenCheckedError Errors)
+
+--- As of now we are aware about the How Angular Change detection Cycle works.
+--- In development mode, Angular change detection cycle runs twice.
+--- The behavior happens in only in Dev mode, once you build the application for production and deploy , you would not see this behavior.
+--- This is development mode feature provided by Angular, it runs the change detection twice.
+--- The change detection runs twice to validate if any new changes are being introduced after first cycle of change detection.
+--- That's why it executes it twice to see if the value produced by the first cycle then suddenly changed.
+--- Sometimes during your development mode you have seen the error "ExpressionChangedAfterItHasBeenCheckedError" in the console.
+--- This error is occur when the the value of the something gets changed after first change detection cycle (I.e Angular detects two different values in change detection cycle).
+--- Meaning Angular detects new value in second change detection cycle.
+--- If you could look at the error, it clearly provide the description that the value that was found during the second development mode only changed detection cycle is different from the value that was found in the first cycle.
+    --- So this value has been changed after first change detection cycle.
+--- Therefore, if you happen to encounter an error like this in your Angular application, it is likely that somewhere in the application, probably in the place that's highlighted here, 
+    --- you have code that changes data that's being shown on the screen in an unintended way and that you have a potential bug in your code.
+
+--- Simple trick to reproduce this issue.
+    1) Create getter
+    2) Return (Math.Random())
+    3) Bind this getter in the template using string interpolation.
+    4) Perform any event in that component to validate.
+
+
+
+// Efficient Template Binding
+
+--- Now, we are aware that change detection runs a lot.
+--- Hence we need to be careful about what are we using in the template binding.
+--- The expressions that you are using in template binding is straight forward.
+--- We should avoid "Function calls", which can contains some complex calculations.
+--- Events bindings and Signal Reads are exceptions, but you should avoid calling other functions.
+--- Also we should avoid getters mapping the in the string interpolation, because in the end it is also the function.
+--- In Pipe section, we learned about that Pipes follow the caching Mechanism. Where they cached the previous result until the value gets changed.
+--- In the end pipe also executes "transform" function, hence it gets call again n again when anything changes .
+--- Hence Angular uses caching mechanism to cache the result to avoid unnecessary change detection.
+
+
+
+// Avoiding Zone Pollution
+
+--- Above, we have seen that , How angular runs the change detection cycle, when event occurs.
+--- Basically zone js is always looking for events (Bindable events or DOM/Browser API) happening in your application.
+--- When that happens, it runs the change detection cycle.
+--- Now at some point , there might be the some events which does not have impact on your template or may you do not want Angular to runs change detection cycle for such events.
+
+--- For example, if we have setup a timer and that will triggered after 4 seconds.
+
+        setTimeout(() => {
+            console.log('TIMER EXPIRED')
+        }, 6000);
+
+    --- Now when this timer gets executed , Zone.js gets notified that some event is happen in the APP.
+    --- Since our entire APP is wrapped around Zone.js , after this event It tells Angular to run the change detection cycle.
+    --- Here, WE are aware that above change will not have any impact our functionality , but still Angular trigger the change detection cycle for such event.
+--- Now, here is twist.
+--- IN Angular, we can avoid to trigger the change detection cycle for such event , which we feel that does not have impact on overall functionality or any  Template Binding in UI.
+--- Angular gives a tool that allows to OPT OUT change detection or OPT OUT of the zone.js watch mode for such code.
+--- For that, we need to Inject to the "ngZone".
+
+    --> Injecting "ngZone"
+
+    --- In below code snippet, we are injecting the NgZone, so that we can opt out for change detection cycle for an event .
+
+        import { Component, inject, NgZone, OnInit, signal } from '@angular/core';
+        export class CounterComponent implements OnInit {
+            private zone = inject(NgZone);
+            count = signal(0);
+
+            ngOnInit(): void {
+                setTimeout(() => {
+                this.count.set(0)
+                }, 4000);
+
+                this.zone.runOutsideAngular(() => {
+                setTimeout(() => {
+                    console.log('TIMER EXPIRED')
+                }, 6000)
+            })
+        }}
+
+
+        --- In this code, we injecting the "NgZone" in to our component like a service.
+        --- "NgZone" is the injection token, that we are importing from "@angular/core".
+        --- The instance  of "NgZone" provides a method called 'runOutsideAngular'.
+        --- This "runOutsideAngular" method, accepts a callback function. 
+        --- WE need to put the  block of code inside this callback function and for that code Angular will not trigger the change detection.
+        --- It is important to note that, the code will executed but Angular will not trigger the change detection cycle for that code.
+        --- SO after running above block of the , we can see the "TIMER EXPIRED" in the console but Angular will not run the change detection cycle for it.
+
+    --- That's how you can achieve some amounts of the Optimization in your code .
+
+    // Using "OnPush" strategy
+
+    --- In previous section, we saw that how can avoid the function calling in templates and also setup the ngZone's "runOutSideAngular" to avoid the change detection for some block of code.
+    --- Beside these strategies , there is an even more powerful strategy you can use in your Angular applications, which can tremendously improve the performance of your applications depending on how you use it and how your application is structured.
+    --- Currently we have "Default" change detection strategy which checked for entire Application when any Event occurs.
+    --- Beside this strategy , Angular also has an alternative change detection strategy called  the "OnPush strategy".
+    --- This strategy make sure that change detection potentially runs less often for the  given component.
+
+        --> How ChangeDetectionStrategy.OnPush Works
+
+        --- With ChangeDetectionStrategy.OnPush, Angular only checks for changes in a component in the following cases:
+
+        1) Input Property Changes: 
+        --- When an input property receives a new reference (i.e., a new object or array, not just a change to an existing object’s property).
+        2) Event Emissions: 
+        --- When the component emits an event through an @Output.
+        --- Or event happens in the component (where we have specified onPush) or its sub components.
+        --- So for example, if the event happens in any one of the component then of course the parent of the respective component gets notified.
+        --- And this happen till the way up to the App Component and then in the entire app tree i.e eventually entire app gets checked.
+        --- Also, if event happens in Parent component, its subtree/ sub-components are also checked.
+
+        3) Manual Triggering: 
+        --- When ChangeDetectorRef.markForCheck() or ChangeDetectorRef.detectChanges() is manually triggered in the component.
+        4) Async Operations: 
+        --- When there are asynchronous events like Promises, Observables, setTimeout, or setInterval within the component.
+        --- Signal changes also responsible for reevaluating component and its child component when using onPush on a a respective component. 
+
+        --> Important Note
+
+        --- The onPush does not restrict events from affecting the components, instead it make sure that the respective component does not get evaluated unnecessarily.
+        --- if we are using an onPush on a component and,
+            --- if event occurs in that component or its child component then that event basically bubble up till the root component and then it results to run the change detection for entire app. 
+        
+        --> Here , You are wondering that Angular still runs the change detection for other components(For example , Parallel components ) even if nothing has change inside it .
+        --- The only way of changing this and potentially improve the application performance is
+            "Go to the place, where change detection can be avoided, not in the place where event occurred."
+        --- So now, when we are saying that event is occurred in a component where we have place the "onPush" and still the other parts of application are checked.
+        --- In that case we can resolve this unnecessarily checking by simply adding "onPush" to these components as well.
+        --- Therefore even though the "Root Component i.e APP" component has been  checked due to bubbling of an event, the component which contains the "onPush" will remain unaffected.
+        --- Then these components also will follow these 4 rules.
+
+
+        // Going Zoneless (Notes are Pending)
+
+        --- 
+
+        --> Also need to visit lectures from Understanding OnPush
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+******** Working with RxJS (Observables) -- Deep Dive
+
+// What are observables in Angular ?
+
+--- Observables is the concept provided by RXJS.
+--- Rxjs is a third party library which heavily used by Angular .
+--- Angular uses this library internally in certain parts.
+--- This(RXJS) is a third party library which is Independent from Angular.
+--- Observables is a objects which produces and controls the stream of data.
+
+
+// Creating and Using Observables
+
+--- There are couple of ways to create an Observables.
+--- We can create Observables using Subjects, Functions which are provided by RXJS and using "Observable class".
+--- Let's see how can we create an Observable and use it.
+
+    --> How Do Observables Work ?
+
+    --- Observables work on the Observer pattern. Here's how it works:
+
+        1) Observable:
+
+        --- It is a producer of values that may arrive over time.
+        --- These values can be delivered synchronously or asynchronously.
+        
+        2) Observer:
+
+        --- It is a consumer of those values. An observer subscribes to the observable to receive data.
+        
+        3) Subscription:
+
+        --- A subscription represents the execution of the observable. When an observer subscribes, the observable begins producing values.
+        
+        4) Operators:
+
+        --- Observables can be transformed using RxJS operators (like map, filter, merge, etc.) to process emitted data before it reaches the observer.
+        
+        5) Teardown/Unsubscribe:
+
+        --- When an observable completes or an observer unsubscribes, the observable stops producing values and releases resources.
+
+    --> Observable Lifecycle
+
+    --- An observable can emit three types of notifications:
+
+        Next: 
+        --- Sends a value to the observer.
+
+        Error: 
+        --- Sends an error and terminates the stream.
+
+        Complete: 
+        --- Indicates the observable has finished emitting values.
+
+        import { Observable } from 'rxjs';
+
+        const observable = new Observable((observer) => {
+            observer.next('First value');
+            observer.next('Second value');
+            observer.complete(); // No more values after this
+            observer.next('This will not be sent'); // Will not be executed
+        });
+
+        observable.subscribe({
+            next: (value) => console.log('Received:', value),
+            error: (err) => console.error('Error:', err),
+            complete: () => console.log('Stream completed'),
+        });
+
+
+    --> subscribe() Parameters
+
+    --- The subscribe() method accepts one or more callbacks: Basically subscribe methods accepts an objects , which contains one or more callback methods.
+        
+        next(value):
+        --- A function to handle each emitted value.
+        
+        error(err):
+        --- A function to handle errors in the observable stream.
+        
+        complete():
+        --- A function to handle the completion of the observable.
+
+
+        obs$.subscribe(
+        (value) => console.log('Next:', value), // Handles next
+        (err) => console.error('Error:', err), // Handles error
+        () => console.log('Completed') // Handles completion
+        );
+
+        // Alternate syntax
+
+        const subscription = interval(1000).subscribe({
+            next: (value) => {
+                console.log(value)
+            },
+            error: () => {
+                console.log('Error Occurred')
+            },
+            complete: () => {
+                console.log('Observable completed.')
+            }
+            });
+
+            this.destroyRef.onDestroy(() => {
+            if(subscription) {
+                subscription.unsubscribe();
+            }
+            })
+
+    --- Now, just as a side note here about subscribing, you indeed need to subscribe to kick off the observable, so to say.
+    --- By default, when you call interval here, it will not do anything unless you have a subscriber because internally the RxJS library recognizes that if there's no one who's interested in the values, it doesn't make sense to emit any.
+    --- So you need at least one subscriber in order to really kick off this interval.
+
+    --> Unsubscribing from Observables
+
+    --- Subscriptions can be manually terminated to prevent memory leaks, especially for long-lived observables (e.g., interval, fromEvent).
+
+        import { interval } from 'rxjs';
+        import { DestroyRef } from '@angular/core';
+
+        private destroyRef = inject(DestroyRef);
+        const subscription = interval(1000).subscribe((value) =>
+        console.log('Emitted:', value)
+        );
+
+        this.destroyRef.onDestroy(() => {
+                   subscription.unsubscribe(); // Stops the observable after 5 seconds
+                console.log('Unsubscribed');
+        })
+
+
+    // RXJS Operators
+
+    --- Operators are functions. There are two kinds of operators:
+
+    1) Pipeable  Operators
+    --- When Pipeable Operators are called, they do not change the existing Observable instance. Instead, they return a new Observable, whose subscription logic is based on the first Observable.
+    --- A Pipeable Operator is a function that takes an Observable as its input and returns another Observable. It is a pure operation: the previous Observable stays unmodified.
+    --- A Pipeable Operator Factory is a function that can take parameters to set the context and return a Pipeable Operator. The factory’s arguments belong to the operator’s lexical scope.
+    --- A Pipeable Operator is essentially a pure function which takes one Observable as input and generates another Observable as output. Subscribing to the output Observable will also subscribe to the input Observable.
+
+    2) Creation Operators
+    --- Creation Operators are the other kind of operator, which can be called as standalone functions to create a new Observable. 
+    --- For example: of(1, 2, 3) creates an observable that will emit 1, 2, and 3, one right after another. 
+    --- For example, the operator called "map" is analogous to the Array method of the same name. Just as [1, 2, 3].map(x => x * x) will yield [1, 4, 9], the Observable created like this:
+
+            import { of, map } from 'rxjs';
+
+            of(1, 2, 3)
+            .pipe(map((x) => x * x))
+            .subscribe((v) => console.log(`value: ${v}`));
+
+            // Logs:
+            // value: 1
+            // value: 4
+            // value: 9
+
+    --> Reference for more detail
+        https://rxjs.dev/guide/operators
+
+
+    // Observables vs Subjects
+
+    --- Subjects are the special kind of observables which also emits the data.
+    --- The key difference is that, subjects can also emits the value manually. 
+    --- You can subscribe and emits the value using Subjects.
+    --- Whereas with Observables you typically have some data source which emits the value automatically or that produces values automatically.
+
+    --> Observables
+
+    --- An Observable is a cold, unicast data stream that only starts producing values when subscribed to.
+
+    --> Characteristics:
+        
+    Unicast: 
+    --- Each subscription to an observable creates a new execution path, meaning each subscriber gets its own copy of emitted data.
+        
+    Cold: 
+    --- Observables do not emit values until subscribed.
+        
+    Immutable: 
+    --- You cannot directly push values into an observable. You need to define its behavior when creating it.
+
+            // For example Code Snippet
+
+            import { Observable } from 'rxjs';
+
+            const observable = new Observable((observer) => {
+            observer.next('Hello');
+            observer.next('World');
+            observer.complete();
+            });
+
+            observable.subscribe((data) => console.log('Subscriber 1:', data));
+            observable.subscribe((data) => console.log('Subscriber 2:', data));
+
+            // Output
+
+            Subscriber 1: Hello
+            Subscriber 1: World
+            Subscriber 2: Hello
+            Subscriber 2: World
+
+
+    --> Subjects
+
+    --- A Subject is a special type of observable that allows multicasting (multiple observers sharing the same execution) and can act as both an observable and an observer.
+   
+    --> Characteristics:
+        
+        Multicast: 
+        --- All subscribers share the same instance of the Subject and receive the same emitted values.
+        
+        Hot: 
+        --- A Subject starts emitting values as soon as you call its methods like next(), regardless of whether there are subscribers.
+        
+        Push Mechanism: 
+        --- You can manually push values into a Subject using the next() method.
+
+        // For example Code Snippet
+
+
+        import { Subject } from 'rxjs';
+
+        const subject = new Subject();
+
+        subject.subscribe((data) => console.log('Subscriber 1:', data));
+        subject.subscribe((data) => console.log('Subscriber 2:', data));
+
+        subject.next('Hello');
+        subject.next('World');
+
+        // Output
+
+        Subscriber 1: Hello
+        Subscriber 2: Hello
+        Subscriber 1: World
+        Subscriber 2: World
+
+
+    // Signals vs Observables (Especially Subjects)
+
+
+    Observables
+    --- Observables in the end "Values Over time".
+    --- In Observables you have that stream of data which you must subscribe in order to get notified about the values.
+    --- Observables are good when where values do arrive asynchronously over time like some events happens asynchronously.
+    --- Observables are more about manage events or values that are emitted by some data source over a time, instead of values that are managed by you.
+
+    Signals
+    --- Whereas Signal are the value containers , where changing the value in the containers will notified all the subscribers who are reading the value.
+    --- WE can read the value from a container without any subscription using "effect".
+    --- Signals are really awesome for managing the state of an Application, where we can set some initial values.
+    --- Where this initial values changes over a time and eventually reflected in the UI.
+    --- Signals are about to managing Values.
+
+
+    --- Ultimately, it of course also comes down to your personal preferences to the project you are working on.
+    --- And it's also definitely true that certain problems you might be facing can be solved with either an observable, or a subject, or a Signal.
+
+    
+
+    // Converting Signals into Observables
+
+    --- Here in this section we can see how can we convert the Signal into Observable.
+    --- To convert the Signal into Observable we can use "toObservable" function.
+    --- We can import this "toObservable" function from "@angular/core/rxjs-interop".
+    --- Here we need to pass the signal to this function.
+    --- Make sure we just need to pass the signal to this function, we do not need to execute it.
+    --- Always keep in mind , we need to pass the un-executed signal to this function.
+    --- We can use this function in the places where we inject values.
+    --- I.e Inside the constructor or we can define the value at the class level (Like we do it for 'inject' function).
+
+        // Code Snippet 
+
+            import { Component, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
+            import { toObservable } from '@angular/core/rxjs-interop';
+            import { interval } from 'rxjs';
+
+            @Component({
+                selector: 'app-root',
+                standalone: true,
+                templateUrl: './app.component.html'
+            })
+            export class AppComponent implements OnInit {
+                private destroyRef = inject(DestroyRef);
+                public clickCount = signal(0);
+                public clickCount$ = toObservable(this.clickCount);
+
+            constructor() {}
+
+            ngOnInit(): void {
+
+
+                const subscription =  this.clickCount$.subscribe({
+                next: (val) => {
+                    console.log(`Obs, CLicked button ${val} times.`)
+                }
+                })
+
+                this.destroyRef.onDestroy(() => {
+                if(subscription) {
+                    subscription.unsubscribe();
+                }
+                })
+            }
+
+            onClick() {
+                this.clickCount.update((prevCount) => prevCount + 1);
+            }
+
+            }
+
+    // Converting Observables into Signals
+
+    --- In previous section, we saw that how can we use the "toObservable" function to convert the signal into Observable.
+    --- Here, we will see how can we convert the observable into Signal.
+    --- While converting the Observables into Signal is very straight forward , but there are some important things that we must remember.
+    --- Here we can use "toSignal" function to use the observables as signal.
+    --- It can be imported from  '@angular/core/rxjs-interop'.
+    
+        --> Initial value
+
+        --- So far we learned a lot about the signals and we know that Signals requires a initial value.
+        --- However Observables do not require a  Initial value. Though for Subjects we can pass the Initial value.
+        --- Here we might face the unexpected behavior.
+        --- Because the when we convert the observable to signal , the default value can be consider as 'undefined'.
+        --- Hence when we start reading a signal then we will get a undefined as first value.
+        --- But Angular provides us a way to setup a  configuration while converting Observables to Signal.
+        --- Let's see how it works.
+
+
+                import { Component, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
+                import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+                import { interval } from 'rxjs';
+
+                @Component({
+                selector: 'app-root',
+                standalone: true,
+                template: `
+                                <p>
+                                        {{intervalSignal()}} //// Reading Signal  (Converted from Observable into Signal)
+                                </p>
+                
+                `
+                })
+                export class AppComponent implements OnInit {
+                private destroyRef = inject(DestroyRef);
+                public clickCount = signal(0);
+                public clickCount$ = toObservable(this.clickCount);
+                public interval$ = interval(1000);
+                public intervalSignal = toSignal(this.interval$, {initialValue: 0});
+                // Setting up the " {initialValue: 0}", so that we can pass the initial value to avoid the undefined case.
+
+                constructor() {}
+
+                ngOnInit(): void {
+                    const subscription =  this.clickCount$.subscribe({
+                    next: (val) => {
+                        console.log(`Obs, CLicked button ${val} times.`)
+                    }
+                    })
+
+                    this.destroyRef.onDestroy(() => {
+                    if(subscription) {
+                        subscription.unsubscribe();
+                    }
+                    })
+                }
+
+                onClick() {
+                    this.clickCount.update((prevCount) => prevCount + 1);
+                }
+
+                }
+
+            
+            // Explanation
+            
+            --- In this example, we have created an Observable using a "interval" function.
+            --- Which emits some value after 1 Sec / 1000 Milliseconds.
+            ---  Using "toSignal" we have converted this observable into signal.
+            --- We have use the configuration object to set the initial value to zero (If we do not Angular consider default value as undefined because Observables do not have default value but Signal do have).
+            --- Interesting this is  "toSignal" will cleanup the Observable subscription Automatically for you if the component where you are using that Signal that was created with  "toSignal" gets removed.
+            --- So when using  toSignal on an observable in the end, you don't need to clean up that subscription or that observable.
+            --- If we do not want a automatic cleanup of the subscription then we can pass the "manualCleanup: true" as part of the configuration.
+
+            // Alternative Way to use the "toSignal"
+
+            --- In this way , we are using injector.
+
+            import { Component, DestroyRef, effect, Inject, inject, Injector, OnInit, Signal, signal } from '@angular/core';
+                import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+                import { interval, Observable } from 'rxjs';
+
+                @Component({
+                selector: 'app-root',
+                standalone: true,
+                templateUrl: './app.component.html'
+                })
+                export class AppComponent implements OnInit {
+                private destroyRef = inject(DestroyRef);
+                public clickCount = signal(0);
+                // public clickCount$ = toObservable(this.clickCount);
+                public interval$ = interval(1000);
+                // public intervalSignal = toSignal(this.interval$, {initialValue: 0});
+
+                // Injecting an Injector as injection token and converting Observables to Signals and Vice  a versa. 
+                constructor(@Inject(Injector) public intervalSignal: Signal<number>, @Inject(Injector) public  clickCount$: Observable<number>) {
+                    this.intervalSignal = toSignal(this.interval$, { initialValue: 5});
+                    this.clickCount$ = toObservable(this.clickCount);
+                }
+
+                ngOnInit(): void {
+
+                    const subscription =  this.clickCount$.subscribe({
+                    next: (val) => {
+                        console.log(`Obs, CLicked button ${val} times.`)
+                    }
+                    })
+
+                    this.destroyRef.onDestroy(() => {
+                    if(subscription) {
+                        subscription.unsubscribe();
+                    }
+                    })
+                }
+
+                onClick() {
+                    this.clickCount.update((prevCount) => prevCount + 1);
+                }
+
+                }
+
+
+        // Reference 
+        https://netbasal.com/converting-observables-to-signals-in-angular-what-you-need-to-know-4f5474c765a0
+
+        --> Scenarios to TEST
+
+        --- Check Subject or Behavior Subject to Signal and Vice a versa
+
+
+        
+    // Create Custom Observable
+
+    --- So far, we learned about how can we create a Observable using the RXJS Operators or Observable Creator function .
+    --- Here we will be understanding about How these operator works behind the scene.
+    --- Basically we are focusing how to create a observable from a scratch.
+    
+        --> How to create a Observable
+
+        --- The first and most important thing that we require is "Observable" class.
+        --- We need to instantiate the "Observable" class.
+        --- All the RXJS operators use this "Observable" class behind the scene to create Observables.
+
+        --> How this "Observable" class works.
+
+        --- WE need to instantiate the "Observable" class for creating a Observable.
+        --- During initiation this "Observable" class accepts a callback function.
+        --- This callback function accepts the object which is having type of "Subscriber" class.
+        --- This Subscriber is generic class which accepts a type (We can specify the type using <> i.e angle bracket for Typescript supports).
+        --- If we do not specify the time , it consider it as default one i.e 'unknown'.
+        --- The callback function that we pass to the Observable class during instantiation , gets call/execute by RXJS when any consumer subscribes to this observable. 
+        --- Hence the object(subscriber) that we pass to this callback function connect us to this subscription that's being setup.
+        --- Basically when we call the subscribe method then RXJS executes this callback function and add/pass the "Subscriber" object as argument to it.
+        --- Basically this "Subscriber" object is a observer, which allows to use the methods like "next", "error", "complete",   "unsubscribe".
+        --- It also contains "add" "remove" and "unsubscribe" method and "closed" property.
+
+        --- Interesting thing to note here, that We also able to "define" the "next" method while calling "subscribe" method .
+        --> Make a note a carefully, that during "Subscription" we are "Defining "next" method" and "while instantiating i.e Creating Observable class we can invoke the next method".
+
+
+        --> Let's understand how this works.
+
+            // Code snippet of Custom Observable
+
+            
+             --> Creating a Observable
+              private customObservable = new Observable((subscriber: Subscriber<{message: string}>) => {
+                    let timeExecuted = 0;
+                    const interval = setInterval(()=> {
+                    if(timeExecuted > 3) {
+                    //subscribe.error() --> you can also emit the error event when any error occurs.
+                        clearInterval(interval);
+                        subscriber.complete();
+                        return
+                    }
+                    console.log('Emitting new value...');
+                    subscriber.next({ message: 'New Value'});
+                    timeExecuted++
+                    }, 2000)  ;  
+                });
+
+            --> Subscribing a Observable
+
+                this.customObservable.subscribe({
+                next: (value) => {
+                    console.log(value)
+                },
+                complete: () => {
+                    console.log('COMPLETED!');
+                }
+                })
+
+                // Alternative syntax
+
+                   this.customObservable.subscribe(
+                    (value) => {
+                        console.log(value)
+                    },
+                    (error) => console.log(error),
+                    () => {
+                        console.log('COMPLETED!');
+                    }
+                    )
+
+
+        --- In above code snippet you can see the usage of next , complete method.
+        --- AS of now we have not use the error method because we did not came across with Such scenario.
+        --- But now you can see while creating an Observable we are deciding what value will get emitted from "next" method.
+        --- On the other hand we have only define the "next" method while subscribing to a observable.
+        --- Basically "subscribe" method accepts an object or directly the sequence of  functions.
+        --- The objects contains , "next", "error" and "complete" properties, which are assigned with some function definition.
+        --- Basically these are properties inside the object which stored function.
+        --- This object has been passed to "subscribe" method by RXJS when we subscribe to an Observable.
+
+        --> Below thing you need to understand.
+
+        --- While calling an "subscribe" method we are passing an Observer object which contains "next", "error" and "complete" properties with assigned functions.
+        --- On he other hand, while creating an Observable, we are simply interacting with that Observer object.
+            --- Basically we are controlling that when the "next" function that we defined while setting up the subscription i.e calling subscribe method will be "invoked".
+            --- This can be applicable to "complete" and "error" method as well.
+            --- We can basically emit these events as well while creating Observable and after that they are being handle inside the subscribe method.
+    
+            1) In "subscribe" method
+            --- We decide what happens when this "next" method /event will be emitted.
+
+            2) While creating Observable
+            --- We decide or control when exactly the next event will be emitted.
+    
+        --- In summary, Inside the "subscribe method" i.e during subscription , we handle the values that are being emitted during the Observable creation. 
+        --- That's how we can create Observables and also how these Observables interact with the Observers(object which gets passed ".subscribe" method).
+        --- In the end the observer object that is received to the Observable constructor function (RXJS adds it when we call subscribe method)and we can control when exactly and at which point of time which event is triggered.
+        --- And Based on that the observer function will be executed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
