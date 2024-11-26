@@ -5758,16 +5758,592 @@ i) Constructor
         --- In the end the observer object that is received to the Observable constructor function (RXJS adds it when we call subscribe method)and we can control when exactly and at which point of time which event is triggered.
         --- And Based on that the observer function will be executed.
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+******** Working with HTTP Request and Handling Responses *********************************************************************************************************************************************
+
+--- So far , we built the applications which are working on their own.
+--- In this section we will be learning how to send the data to database or backend server using HTTP.
+--- Then how to retrieve the saved data from a backend server or database.
+--- Also we will we learning how to establish the connection to Backend server or Database.
+--- Handle the success and error state based on the response from a Server.
 
 
 
+// How To Connect Angular Apps To A Backend
+
+--- When we talked about interacting Angular Application to a database, we do not directly connect or interact with a database inside a Angular Application.
+--- Because in the Angular code runs into the browser and that is visible to end user .
+--- Which results into Security Vulnerabilities and Performance issue.
+--- There is chance where your DataBase credentials are visible to end user.
+--- Therefore we cannot connect directly to Database from a Angular APP.
+--- Instead of that we use API (Application Programming Interface).
+--- The API's are way or the bridge , that establish the connect of Angular APP to Database.
+--- In more technical term, API's are responsible for establishing the Connection between Client Side and Server Side.
+--- We can built our own API's as well for the project on which we are working on or we can use third party API.
+
+
+                Client Side Angular APP (Running Browser)
+            _________________________________________________________
+            ⬇️                                                         ⬆️
+            ⬇️                                                         ⬆️
+            ⬇️  (From client)                                          ⬆️  Send Response (From backend to Client )
+            ⬇️  Sends Request                                          ⬆️  (Request data from client)
+            ⬇️  (To fetch data or Update or create some data)          ⬆️
+            ⬇️                                                         ⬆️
+            ⬇️                                                         ⬆️
+            ⬇️                                                         ⬆️
+            ⬇️                                                         ⬆️
+         ______________________________________________________________
+        |     Backend (Server Side)                                    |        |
+        |______________________________________________________________|
+        
+        
+        --- This is running on another server.
+        --- Since it is running in Isolation, it cannot be accessible by end user who is using APP in Browser
+        --- Therefore it is more secure.
+        --- Only some routs/request url and request/response body is visible.
+        --- Which is off course, because we call these routes/request URL from the client side to connect a Backend .
+        --- But the code and other credentials things which requires to connect a database are not visible to end user who is accessing app through a browser.
+
+
+// Getting Started with HTTP Client.
+
+--- In above section, you have seen that we need to send the request to backend server from inside our Angular Application so that Backend provides a response.
+--- In this section we will see how can we send the request from Angular APP.
+--- To send the request from Client Side we need  a "HTTP Client".
+
+    --> How to use "HttpClient"
+    --- We need to inject "HttpClient" using "inject" function or constructor approach .
+    --- Before that Firstly, we need to register the "HttpClient" in one of the providers.
+    --- As we learn in the dependency Injection section, Whenever we inject something in Component, Directive or Service , Angular starts looking for its registration from Element Hierarchy to Platform Level.
+    --- We need to register the "HttpClient" at the root level, so that we can use and inject it across the Application. 
+    --- Since we are using "standalone" components approach , we need to register the "HttpClient" in the main.ts.
+    
+    --> Refer to the code below for Registering and Using the HttP Client (In Standalone component).
+
+        // main.ts
+
+        import { bootstrapApplication } from '@angular/platform-browser';
+
+        import { AppComponent } from './app/app.component';
+        import { provideHttpClient } from '@angular/common/http';
+
+
+        bootstrapApplication(AppComponent, {
+            providers: [provideHttpClient()]  //// We need to call "provideHttpClient" function inside the providers array. So Angular will register the "HttpClient"
+        }).catch((err) => console.error(err));
+
+    --> In Module Base Approach
+
+        import { NgModule } from '@angular/core';
+        import { FormsModule } from '@angular/forms';
+        import { provideHttpClient } from '@angular/common/http';
+        
+        @NgModule({
+        declarations: [
+            AppComponent,
+            PlacesComponent,
+            // ... etc
+        ],
+        imports: [BrowserModule, FormsModule],
+        providers: [provideHttpClient()], //// Invoked "provideHttpClient" function inside the providers array of "root module i.e App Module" 
+        bootstrap: [AppComponent],
+        })
+        export class AppModule {}
+
+
+    // Using HttpClient at "@Component level"
+
+        import { Component, inject } from '@angular/core';
+        import { HttpClient } from '@angular/common/http';
+
+        @Component({
+        selector: 'app-available-places',
+            standalone: true,
+            templateUrl: './available-places.component.html',
+            styleUrl: './available-places.component.css',
+        })
+
+        export class AvailablePlacesComponent {
+            private httpClient = inject(HttpClient);  //// Successfully inject the "HttpClient". Now it will have a root level instance since we have registered it at the Root Level.
+        }
 
 
 
+// Sending a GET request
+
+
+--- Now, we have registered our HttpClient and also injected the same in our component.
+--- Now, the question is how to use it and how to send a request.
+--- Before taking deep dive into all the other methods which are present on a HttpClient , we will start by "GET" method.
+--- More about GET method "https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET" 
+
+--- Now here, in our case we need a data from a backend right after my component gets initialize.
+--- Therefore as we learned during a component lifecycle that "ngOnInit" is the hook which helps to add the such implementation.
+--- Hence , we will be sending the Http Request inside the ngOnInit.
+
+    --> Code snippet
+
+        import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+        import { Place } from '../place.model';
+        import { PlacesComponent } from '../places.component';
+        import { PlacesContainerComponent } from '../places-container/places-container.component';
+        import { HttpClient } from '@angular/common/http';
+
+        @Component({
+        selector: 'app-available-places',
+        standalone: true,
+        templateUrl: './available-places.component.html',
+        styleUrl: './available-places.component.css',
+        imports: [PlacesComponent, PlacesContainerComponent],
+        })
+        export class AvailablePlacesComponent implements OnInit {
+        places = signal<Place[] | undefined>(undefined);
+        private httpClient = inject(HttpClient);
+        private destroyRef = inject(DestroyRef);
+
+        ngOnInit(): void {
+            const subscription = this.httpClient.get<{places: Place[]}>(`http://localhost:3000/places`).subscribe({
+            next: (res) => {
+                console.log(res)
+            }
+            });
+            this.destroyRef.onDestroy(()=> {
+            if(subscription) {
+                subscription.unsubscribe();
+            }
+            })
+            }
+        }
+
+    --> Explanation
+
+    --- The one and most important thing to note that all the methods which are present on "HttpClient" returns an "Observable".
+    --- And we know to read the emitted value from a Observable , we need to subscribe it.
+    --- Also the method on HttpClient or the "GET" method in our example, accepts a "Generic Type" (If we do not specify the type then it consider default type as a 'Object').
+    --- This type refers to the response or data that will be received in the "next" function that we defined inside a observer object inside "subscribe" method.
+    --- As we know that we are receiving the object which contains "places" as property and the type of it is "Place[]", so we have specified it inside "angle bracket i.e Generic type".
+    --- "get" method accepts a "url" as first and required argument. This url is path to which we wanna send the request.(`http://localhost:3000` --> Domain , "/places" --> route)
+    --- The second argument is configuration object where you can configure your request that is being pass from the Angular application.
+    --- As mentioned since "GET" returns an observable and if we do not subscribe to it then the request to Backend from a Angular Application will not triggered.
+    --- Basically "get()" method creates a "blueprint" of actual "GET request". You need to subscribe() to then trigger the request. 
+
+    --- Another important  thing to note here that the "Observables" are emitted by "HttpClient" is that they only emit one value "typically".
+    --- We are using word "typically", because we can configure them to different ways and make sure that they emit more values (For that check the configuration object that can be pass as a second argument. It contains different configuration).
+    --- But by default it emits only value, which is response data thats returned by backend.
+    --- Since the observables returned by HttpClient methods only emits one value, so you do not necessarily need to unsubscribe them.
+    --- However we are doing it to adheres the good practice. 
+
+
+// Configuring HTTP Requests
+
+--- In above section, we learned about how can we send the request from a client to server.
+--- Along with it, I mentioned that we can also configure the request i.e the we can pass the configuration object as second argument to a "get()" method.
+--- Now we will take a look for a one of the configurations that we can do with our request.
+
+    --> Setting up "observe"
+    --- We can setup a "observe" property inside a configuration object.
+    --- It accepts an literal type  i.e we can only pass the certain specified value to it.
+    --- We can specify the "response" or "events" as value to it.
+    --- Now let's see what happen when we pass both of them one by one.
+
+        "response"
+        --- As of now when we subscribe to "get" method, we are getting "places" as in response.
+        --- However this response that we are getting is actually the data which is being extracted from  a "body" of the actual response.
+        --- So that we can use the exact body response which requires us for a implementation.
+        --- This is default behavior.
+        --- But when we we specify the "observe:'response'" then we get the full response which has been send by the backend.
+        --- This response contains below structure if we could log into the console.
+
+            --> Code snippet 
+
+              const subscription = this.httpClient.get<{places: Place[]}>(`http://localhost:3000/places`,
+                {
+                    observe: 'response' //// Configured the observe, so that we can decide which kind of response we want.
+                }
+
+                ).subscribe({
+                next: (res) => {
+                    console.log(res)
+                }
+                });
+
+
+            --> Logged response
+
+                    {
+                    "headers": {
+                        "normalizedNames": {},
+                        "lazyUpdate": null
+                    },
+                    "status": 200,
+                    "statusText": "OK",
+                    "url": "http://localhost:3000/places",
+                    "ok": true,
+                    "type": 4,
+                    "body": {
+                        "places": [
+                            {
+                                "id": "p1",
+                                "title": "Forest Waterfall",
+                                "image": {
+                                    "src": "forest-waterfall.jpg",
+                                    "alt": "A tranquil forest with a cascading waterfall amidst greenery."
+                                },
+                                "lat": 44.5588,
+                                "lon": -80.344
+                            },
+                        ]
+                    }
+                }
+
+        --- Now, you can see that our next function will emit the entire response instead of body.
+        --- This response is having type " HttpResponse".
+        --- That's how we can get the full response by doing a such configuration.
+
+
+        "events"
+        --- Now beside observing the response, you can also observe the events.
+        --- Remember in previous section, we have mentioned that "get()" method "typically" emits a value only one time.
+        --- Here, by adding this configuration, our "get()" method observable emits more than a one value or multiple value.
+        --- Because our observable now emits different events that occurred during the request-response life cycle.
+        --- Basically we will get two logs when we logged the value to the console.
+        --- First, log is for the sending the request to backend (I.e Request was sent to backend).
+        --- Second, receiving the response from a backend (I.e Response has received from a Backend).
+        --- That's how we can listen to the multiple events on a our request. 
+        --- Basically these events denotes the "request-response" lifecycle .
+        --- Sometimes we can add the implementation on the basis of these events.
+
+            --> Code snippet
+
+                const subscription = this.httpClient.get<{places: Place[]}>(`http://localhost:3000/places`,
+                    {
+                        observe: 'events'
+                    }
+
+                    ).subscribe({
+                    next: (res) => {
+                        console.log(res)
+                    }
+                    });
+
+            --> Events logged into the console
+
+                1)
+                        {
+                            "type": 0
+                        }
+                    --- This object denotes the request was sent.
+
+                
+                2)
+
+                        {
+                            "headers": {
+                                "normalizedNames": {},
+                                "lazyUpdate": null
+                            },
+                            "status": 200,
+                            "statusText": "OK",
+                            "url": "http://localhost:3000/places",
+                            "ok": true,
+                            "type": 4,
+                            "body": {
+                                "places": [
+                                    {
+                                        "id": "p1",
+                                        "title": "Forest Waterfall",
+                                        "image": {
+                                            "src": "forest-waterfall.jpg",
+                                            "alt": "A tranquil forest with a cascading waterfall amidst greenery."
+                                        },
+                                        "lat": 44.5588,
+                                        "lon": -80.344
+                                    },
+                                ]
+                            }
+                        }
+                    --- This object denotes the response has received.
 
 
 
+ // Loading fallback and Handling HTTP Errors
 
+ --- When we sent the request from the UI, it takes sometime to complete the request-response cycle.
+ --- In that case, we should show show some fallback content so that it tells the end user that request is in progress..
+ --- To handle such case we are showing some text so that it will tell end user the request is in progress.
+
+ --- Another case is to Handling HTTP Errors.
+ --- Sometimes during the this request response cycle there might be the changes if internet connection loss or another chance that there is error occur at the back end.
+ --- In that case we also need to show some messages or screen to the end user so that they are aware about it.
+ 
+ --- These two thing , i.e Showing fallback content during request response cycle and showing human readable error message are the two important aspects while dealing with HTTP.
+ --- Because it shows how gracefully we have implemented the functionality.
+
+ --- Please refer to the below code snippet for a reference
+
+            --> Code Snippet
+
+                export class AvailablePlacesComponent implements OnInit {
+                    places = signal<Place[] | undefined>(undefined);
+                    isFetching =signal(false);
+                    error = signal('');
+                    private httpClient = inject(HttpClient);
+                    private destroyRef = inject(DestroyRef);
+
+                    ngOnInit(): void {
+                        this.isFetching.set(true);
+                        const subscription = this.httpClient.get<{ places: Place[] }>(`http://localhost:3000/places`).
+                        pipe(
+                            tap((res) => console.log(res)),
+                            map(res => res.places),
+                            catchError(()=> throwError(()=> new Error('Something went wrong fetching the available places. Please try again later.')))
+                        ).subscribe({
+                            next: (places) => {
+                            this.places.set(places)
+                            },
+                            error: (error: Error) => {
+                            this.error.set(error.message)
+                            },
+                            complete:() => {
+                            this.isFetching.set(false);
+                            }
+                        });
+                }
+
+
+
+// Send Data to Backend (PUT )
+
+--- As of now we learned about how to retrieve the data from  a server/backend using "GET".
+--- Now we can also send the data to the backend.
+--- In this section, we will be sending the data to the backend using "PUT" request.
+--- The "PUT" request accepts the request body i.e payload.
+--- Any "NON-GET" request , requires a request body.
+--- That request body contains the data that needs to be submitted to the backend.
+--- Like "get", this "put" method also needs to be subscribe.
+--- The request will not be sent if do not subscribe. We must need to subscribe to trigger this HTTP request.
+--- So you must have subscribe even if you are not interested in a response or might be that response do not have meaningful data.
+--- "put" method accepts first argument the "url" along with the correct "path" of the request that needs to be send.
+--- The second argument is a request body which requires to send to the backend.
+--- The request body can be object or array.
+--- Angular  automatically converts this request body into JSON DATA using JSON DATA format when the request is being send from the Client.
+--- Basically our request body gets converted into JSON format by Angular then after that it sends that data to the backend.
+
+    --> Code Snippet
+
+        onSelectPlace(selectedPlace: Place) {
+            this.httpClient.put(`http://localhost:3000/user-places`, {
+            placeId: selectedPlace.id
+            }).subscribe({
+            next: (res) => {
+                console.log(res)
+            }
+            })
+        }
+
+--- We can also add the fallback content and error state when request is being made.
+
+
+--> Important TIP
+--- In real world projects whenever you use service to  setup the HTTP request, ensure you subscribe to those service subscription at component level.
+--- That helps to managing the  cleanup of the subscription when component gets removed.
+--- Because when you subscribe to the request in service and then pass that data to a component then its difficult to cleanup subscription for that request.
+--- Because you never knows when that service will  destroy.
+--- Also by handling subscription at a component level helps you to manage different states based upon the different responses.
+
+--> TIPS related to observables
+
+// "catchError" & "throwError"
+---  In above example, we have used the "catchError" operator and "throwError" observable function.
+--- Basically catchError operator is used to catch the error . It uses for handling errors or potentially transforming errors.
+--- It takes a error as a first argument which was received by Observable and second argument is the Observable it self which emitted a error.
+--- "catchError" needs to return an Observable . Unlike map operator it does not return a data.
+--- "throwError" is a error observable creator function (It is not a operator, it is a observable creation function like 'interval'), which returns a Observable which creates instance of an Error.
+--- The observable created by "throwError" function , automatically throws an error again.
+--- This helps to trigger the "error" function in the observer object.                
+
+//"tap"
+
+--- "tap" operator is the operator that you can use to handle side effects.
+--- We can use this operator to execute the code same as the code that we execute inside the subscribe.
+--- We can execute the similar code inside a  subscribe method in the tap without the subscribing.
+--- "tap" also accepts the "observer" object. We can use next, error , complete method inside a tap operator.
+
+// HTTP Interceptors
+
+--- HTTP interceptor is one of the important feature of the "HTTPClient".
+--- An HTTP Interceptor in Angular is a powerful mechanism that allows you to inspect, modify, or replace HTTP requests and responses globally before they are sent to the server or received by the client.
+--- It operates on the HttpClient  and is useful for adding common headers, handling errors, logging, or implementing authentication logic.
+
+--- The interceptors are called when the request is about to be sent or when a response arrived.
+--- Besides the place where you triggered the request or where you subscribed to request observable, beside these places you can execute your logic inside the Interceptors.
+
+--> Important Note
+--- In previous versions of Angular, the "HTTP Interceptors" were build by using "Class Based Approach".
+--- IN latest Angular versions, the "HTTP Interceptors" can build by using "Function Based Approach".
+--- The latest function base approach is the recommended way.
+--- Though we will be taking look at both the approaches one by one.
+
+    // Function Base interceptors
+
+    --- To register the interceptor , we must use the same place where we have registered the "HttpClient".
+    --- In our example, i.e in latest Angular version we have registered our "HttpClient" in the main.ts.
+    --- Let's look at the code and understand how latest approach of HTTP Interceptor works.
+
+    --- There are two types of request. 
+        1)Request
+        2) Response
+
+        // Request Interception
+        --> Code Snippet (main.ts)
+
+
+        import { bootstrapApplication } from '@angular/platform-browser';
+
+        import { AppComponent } from './app/app.component';
+        import { HttpHandlerFn, HttpRequest, provideHttpClient, withInterceptors } from '@angular/common/http';
+
+        function loggingInterceptor(request: HttpRequest<unknown>, nextFn: HttpHandlerFn) {
+            const cloneReq = request.clone({
+                headers: request.headers.set('X-USER-NAME', 'OMKAR')
+            });
+            console.log('[OUTGOING REQUEST]');
+            console.log(cloneReq);
+
+            return nextFn(cloneReq);
+        }
+
+        bootstrapApplication(AppComponent, {
+            providers: [provideHttpClient(
+                withInterceptors(
+                    [loggingInterceptor]
+                )
+            )]
+        }).catch((err) => console.error(err));
+
+        --> Explanation
+
+        --- In above code snippet first we need to call or invoked "withInterceptors" function inside the "provideHttpClient".
+        --- Basically by invoking "withInterceptors" function we are assigning the result of it to the  "provideHttpClient" function.
+        --- "withInterceptors" function accepts an array, where you should pass the "Interceptor Functions" that should be executed by Angular when any outgoing request is being made or any incoming response is arrived.
+        --- The function that we can pass to  "withInterceptors" functions are "Interceptor Functions".
+        --- For a demo purpose ,we have added these interceptor function in the same file, but at the enterprise level application you can create separate files for every interceptor function.
+        --- Here we have created  "loggingInterceptor" as interceptor function.
+        --- "Interceptor Functions" are the regular functions which accepts certain parameters. 
+
+        --> The first argument to this interceptor function is type of "request: HttpRequest<unknown>".
+        --- It is nothing but the ongoing request or the request that we are making from the Client.
+        --- It is generic type which needs a extra type information.
+        --- We have specify the "unknown", because we do not the type of request. So therefore it will apply to any kind of request which transport any kind of value.
+        --- It contains the object which is having all the details about ongoing request like , headers, requestURL, statuscode and so on ..
+        
+        --> The second argument to this function is type of "nextFn: HttpHandlerFn"
+        --- This argument is used to allow the intercepts request to eventually continue.
+
+        --- Remember we can pass these "Interceptor functions" into "withInterceptors" function's as a array.
+        --- And we should not invoke these functions.
+        --- We just need to pass these pass these functions.
+
+        --> "clone"
+        --- HTTP requests and responses are immutable. If an interceptor needs to modify them, it creates a clone of the request or response object.
+        --- "clone" method use to clone the ongoing request and response.
+        --- "clone" method accepts an object whee we can specify the things that we need to change.
+        --- "clone" method returns an clone object with changes that we done.
+        --- And then we can pass this altered / modified request to nextHandler function.
+
+
+        // Response Interceptor
+
+        --- Besides adding an interceptor for ongoing request, we can also build up the Response Interceptor (For incoming Responses).
+        --- For handling the incoming the response you need a Request Interceptor.
+        --- Because we can intercept the response only for the request are being send.
+        --- "HttpHandlerFn" i.e next i.e "nextFn" send the request to the next handler in the chain or to the server.
+        --- This function returns an Observables which emits the "HTTP event".
+        --- Since HttpHandlerFn returns an observable so we can use pipe to handle the interceptor response.
+        --- Ensure we do not subscribe to it. Because that will end the chain of the Interceptor Observable and other parts of the application would not be able to interact with response.
+
+
+
+        --> Code snippet
+
+            import { bootstrapApplication } from '@angular/platform-browser';
+            import { AppComponent } from './app/app.component';
+            import { HttpEventType, HttpHandlerFn, HttpRequest, provideHttpClient, withInterceptors } from '@angular/common/http';
+            import { tap } from 'rxjs';
+
+            function loggingInterceptor(request: HttpRequest<unknown>, nextFn: HttpHandlerFn) {
+                const cloneReq = request.clone({
+                    headers: request.headers.set('X-USER-NAME', 'OMKAR')
+                });
+                console.log('[OUTGOING REQUEST]');
+                console.log(cloneReq);
+
+                return nextFn(cloneReq).pipe(
+                    tap({
+                        next: (event) => {
+                            if(event.type === HttpEventType.Response) {
+                                console.log('[INCOMING RESPONSE]');
+                                console.log('HTTPEVENT', event);
+                            }
+                        }
+                    })
+                );
+            }
+
+            bootstrapApplication(AppComponent, {
+                providers: [provideHttpClient(
+                    withInterceptors(
+                        [loggingInterceptor]
+                    )
+                )]
+            }).catch((err) => console.error(err));
+
+            --- That's how you can build the response interceptor in the combination of request interceptor.
+            --- There are different kinds of HttpEventType like "Sent" ,  "UploadProgress", "DownloadProgress", "UploadProgress" ,"ResponseHeader", "User".
+            --- Also it is important to note that in the "request" interceptor you can see the request are going the way you have decided their sequence.
+            --- However for response the sequence may change, because for some of the request which take more time than expect while another request can fulfill the response very quickly.
+
+
+        // Class Base Interceptor approach.
+
+        --- At the beginning of this section, we already mentioned that in latest Angular versions we are using "function" base interceptor.
+        --- While in older version there was a class based interceptor.
+        --- Now you can also build the class based interceptor in modern angular versions as well using "DI-based interceptors".
+        --- Let's rebuild above function base interceptor into Class based interceptor.
+
+                import {
+                HttpEvent,
+                HttpHandler,
+                HttpInterceptor,
+                HttpRequest,
+                } from '@angular/common/http';
+                import { Observable } from 'rxjs';
+                
+                @Injectable()
+                class LoggingInterceptor implements HttpInterceptor {
+                    intercept(req: HttpRequest<unknown>, handler: HttpHandler): Observable<HttpEvent<any>> {
+                        console.log('Request URL: ' + req.url);
+                        return handler.handle(req);
+                    }
+                }
+
+        --- An interceptor defined like this, must be provided in a different way than before though.
+        --- You now must use withInterceptorsFromDi() and set up a custom provider, like this:
+
+                        providers: [
+                            provideHttpClient(
+                                withInterceptorsFromDi()
+                            ),
+                            { provide: HTTP_INTERCEPTORS, useClass: LoggingInterceptor, multi: true }
+                        ]
+        --- Here we are using "withInterceptorsFromDi" and invoking the same inside the "provideHttpClient".
+        --- DI-based interceptors are configured through a dependency injection multi-provider:
+        --- DI-based interceptors run in the order that their providers are registered. In an app with an extensive and hierarchical DI configuration, this order can be very hard to predict.
+
+        --> Reference
+            https://angular.dev/guide/http/interceptors#di-based-interceptors
 
 
 
