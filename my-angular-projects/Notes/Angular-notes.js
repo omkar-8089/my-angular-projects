@@ -6346,8 +6346,1856 @@ i) Constructor
             https://angular.dev/guide/http/interceptors#di-based-interceptors
 
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+******** Deep Dive - Template Driven and Reactive Forms ***********************************************************************************
+
+--- As of now we have interacted with the inputs by using 2 way binding.
+--- However that is not a only way to interact with Forms or User Input.
+--- Angular provides more comprehensive way to deal with the forms.
+--- The "Template driven" and "Reactive" forms.
+--- These two approaches would change the way to deal with the forms.
+--- Once you start working with Complex forms you need to choose either one of the approach to build the forms.
+
+// Introduction
+
+    -->  Template Driven Forms
+    --- As name suggest these forms are setup using Templates.
+    --- These forms are easy to understand.
+    --- Implementing more complex logic and advance forms cane be tricky.
+    --- Here we can register our "inputs (HTML Inputs)" using template so that Angular is Aware of them using Templates.
+    --- For small or medium level use cases we can make the use of "Template Driven Forms".
+
+    --> Reactive Forms
+    --- Here we can setup the form structure in the "Typescript code".
+    --- Then you can link the code that you have written in the Typescript code to the template elements , so that Angular should know about the which input element ties to which control.
+    --- Setup of Reactive forms requires more verbose code.
+    --- It can be use to handle more complex and advance cases.
+    --- WIth the help of Reactive Forms you can handle complex implementation in more easier way.
 
 
+// Template Driven Forms
+
+--- In this section we will be learning about the "Template Driven Forms".
+--- We will cover all the topics which needed to understand "Template Driven Forms" one by one.
+--- Let's get started.
+
+    // Registering the Form Controls
+
+    --- As mentioned above the "Template Driven Forms" are setup using the template.
+    --- When we create the Form using some inputs. (Here inputs refer to different element where user can able entered/select their value, like "input","select" ,"textArea", "radioButton", "checkBox", so on ....)
+    --- We must have to let the Angular knows about them.
+    --- The main goal is make Angular aware about our Form Inputs so that Angular can provide us some features to interact with these Elements.
+    --- For example extract the entered values.
+    --- Here we can make the use of  "ngModel" directive to register the inputs and that helps to let the Angular knows about the Input Elements.
+    --- By registering with Angular, we can now have access to this element and Angular offers some features so that we can play around it.
+    --- Here we are not using "ngModel" directive for Two way binding.
+    --- In this case we simply needs to add the "ngModel" as directive on Input elements.
+    --- TO make this workable we must need to import the "FormsModule" in the respective component's import array.
+    
+    --> Important tip
+
+    --- Though after doing this your app still break.
+    --- After loading your app you will see below error in the browser's console.
+
+        --> Error in console
+
+            core.mjs:6426 ERROR RuntimeError: NG01352: If ngModel is used within a form tag, either the "name" attribute must be set or the form
+            control must be defined as 'standalone' in ngModelOptions.
+
+            Example 1: <input [(ngModel)]="person.firstName" name="first">
+            Example 2: <input [(ngModel)]="person.firstName" [ngModelOptions]="{standalone: true}">
+
+        --> Explanation
+
+        --- This error is occurred because "name" attribute is missing on your inout elements.
+        --- Whenever you use the "ngModel" on any Input element you must need to pass "name" attribute to that element.
+        --- Angular uses this "name" attribute value to register your input element as a Form Control.
+        --- Basically that can be act as identifier for that element in the Angular registry.
+        --- After adding "name" attribute the error goes away.
+
+
+
+    --> Final Code snippet of registering Input elements (Form Controls)
+
+
+                        import { Component } from '@angular/core';
+                        import { FormsModule } from '@angular/forms';
+
+                        @Component({
+                            selector: 'app-login',
+                            standalone: true,
+                            imports: [FormsModule],
+                            template: `
+                            
+                                    <form>
+                                        <h2>Login</h2>
+
+                                        <div class="control-row">
+                                            <div class="control no-margin">
+                                            <label for="email">Email</label>
+                                            <input id="email" type="email" name="email" ngModel/>
+                                            </div>
+
+                                            <div class="control no-margin">
+                                            <label for="password">Password</label>
+                                            <input id="password" type="password" name="password" ngModel/>
+                                            </div>
+
+                                            <button class="button">Login</button>
+                                        </div>
+                                    </form>
+
+                            
+                            `,
+                            styleUrl: './login.component.css',
+                            })
+                        export class LoginComponent {}
+
+
+
+    // Getting Access to the "Angular Managed Forms"
+
+    --- In previous section we have registered our elements with Angular.
+    --- Now we have to access these elements.
+    --- We need to find the way get the hold of these elements.
+    --- Since we are using "Template driven Approach", we need a way to get the access for elements i.e Form.
+    --- For that we will do the following steps in our template.
+
+    1) Get the hold of the form
+
+
+        // (Non-Ideal) Not Ideal way to get access (This will not work)
+    --- First thing we can get the hold of the FORM element.
+    --- We can use the "template reference" variable to get the hold of FORM.
+    --- But by doing it we will only get "HTMLFormElement" reference.
+    --- We will get DOM HTMLFormElement reference
+    --- In fact , we are looking for the form which will gives the concrete form access.
+    --- Basically we are looking for the access of FORM object that will be created and managed by Angular behind the scenes.
+
+        -->  BELOW CODE WILL NOT WORKED
+            <form #form> </form>
+
+
+        // Ideal way to get the access
+
+    --- As we learn that previously, when we use the "FormsModule", Angular detects the "form" element.
+    --- And it can consider "form" as a selector and creates a component behind the scene with that selector.(Basically angular create a component and put the selector as 'form' and that points to "form" html element).
+    --- That's how Angular can control the "form" element.
+    
+        --> Important behavior
+
+        --- Changing form element into Form component was the one thing that done by FormsModule.
+        --- Another important thing that FormsModule provides us is that to change the "default value of the "form" template local reference variable"
+        --- In first "Non Ideal" solution, when we use the " <form #form> </form>" , then "#form" was pointing to it's default value i.e  "HTMLFormElement".
+        --- Now with the help of FormsModule we can change its default value.
+        --- Now you might wonder then which value that we can assigned.
+        --- The value basically cannot be any value or it cannot be the value that we can assign or store like we usually do while assigning some values to attribute to they can store that value.
+        --- "This value is a special identifier that might be exposed by some directive or component that then binds this template variable to some other value".
+
+            --> *****Reference - How "exportAs" works *****.
+                https://www.youtube.com/watch?v=ckgfdWeiDPE
+
+        --- Now we can use "ngForm" as value to override the default value of the "HTMLFormElement".
+        --- "ngForm" is value of directive which is exposed by the FormsModule.
+        --- Basically it is special identifier offered by Angular, offered by its "form directive". 
+        --- Which will help to bind "form template variable to an object of the type "ngForm"".
+        --- This "NgForm" object type is managed by Angular (Name starts with "Ng").
+        
+        --- Now we do have access to form object using "NgForm" in a our template reference variable "#form".
+        --- In this form object our inputs are registered.
+        --- If you could debug this form object you will the different properties like "controls", "values" , "validators" and so on ...
+        --- In the controls and value object, if you could see the object then you will find that "keys or properties" are same as the "name" properties that we did define for the input elements.
+        --- That's why it is very important to pass the "ngModel" and the "name" attribute, so that this form object can register these input elements and setup the form related thing against it.
+
+
+    2) Get the access of the Form
+
+    --- At this point , we have hold on the "form" object which holds all the details about out Form.
+    --- To access this form object either we can use  ("viewChild" or "@ViewChild") or "we can pass this value to the function and that function will trigger on "(ngSubmit)" event".
+    --- We already learned about "ngSubmit" event, this event is added by FormsModule on the form element behind scene when Angular detects at the time when trigger the form submission.
+    --- (See how it works in earlier sections for more detail)
+
+
+        --> Final code snippet for accessing "form"
+
+
+            import { Component } from '@angular/core';
+            import { FormsModule, NgForm } from '@angular/forms';
+
+            @Component({
+            selector: 'app-login',
+            standalone: true,
+            imports: [FormsModule],
+            template: `
+            
+                <form #form="ngForm" (ngSubmit)="onSubmit(form)">
+                    <h2>Login</h2>
+
+                    <div class="control-row">
+                        <div class="control no-margin">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" name="email" ngModel/>
+                        </div>
+
+                        <div class="control no-margin">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" name="password" ngModel/>
+                        </div>
+
+                        <button class="button">Login</button>
+                    </div>
+                    </form>
+
+            
+            
+            `,
+            styleUrl: './login.component.css',
+            })
+            export class LoginComponent {
+
+            onSubmit(form: NgForm) {
+                console.log(form)
+            }
+            }
+
+        --- In logged you will the object with type "NgForm", which contains different properties.
+        --- The one of the important property is "form" which hold the type of "FormGroup".
+        --- This formGroup contains properties like  "controls", "errors", "events", "pristine", "value" and so on...
+        --- In the "controls" and "value" object, if you could see the object then you will find that "keys or properties" are same as the "name" properties that we did define for the input elements.
+        --- That's how ngModel registers the value of "name" attribute as "key or properties" in the "controls" and "value". 
+        --- "controls" object contains the control details about every element, where "key name is same as the value that we stored for "name" attribute in template"
+            --- and its value is basically a object with type of "FormControl".
+            --- It contains the details of every element where it is valid, pristine, touched or its values, errors and many other details
+
+        --- That's kind of Advance Form Management we can get from Angular using the "Template driven Form."
+
+
+
+
+    // Extracting values from the Form.
+
+
+    --- As of now, we have got the access to the Complex Form Object.
+    --- This complex setup has automatically done by Angular we just provided "ngModel" and "name" properties to the Angular.
+    --- Now we can extract the values of the inputs from this Form Object.
+    
+    --> Important Note
+    --- Beside using "ngModel" on input elements , you can still able to use  "[(ngModel)]" i.e two way data binding inside the "NgForm".
+    --- And you would still managed to get Angular managed Form Object .
+
+            import { Component } from '@angular/core';
+            import { FormsModule, NgForm } from '@angular/forms';
+
+            @Component({
+            selector: 'app-login',
+            standalone: true,
+            imports: [FormsModule],
+            template: `
+            
+                <form #form="ngForm" (ngSubmit)="onSubmit(form)">
+                    <h2>Login</h2>
+
+                    <div class="control-row">
+                        <div class="control no-margin">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" name="email" ngModel/>
+                        </div>
+
+                        <div class="control no-margin">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" name="password" ngModel/>
+                        </div>
+
+                        <button class="button">Login</button>
+                    </div>
+                    </form>
+
+            
+            
+            `,
+            styleUrl: './login.component.css',
+            })
+            export class LoginComponent {
+
+             onSubmit(formData: NgForm) {
+                    console.log(formData);
+                    const enteredEmail = formData.value.email;   //// Extracting "email" from form.
+                    const enteredPassword = formData.value.password; //// Extracting "password" from form.
+                    console.log('enteredEmail', enteredEmail);
+                    console.log('enteredPassword', enteredPassword);
+                }
+            }
+
+
+
+
+    // Validating Input with Form Validation Directives
+
+    --- Now till this time , we have extracted the values from the Form.
+    --- Here, we will be adding some validation to the form controls.
+    --- In template driven approach, we can make the use of "Built In Vanilla HTML Attributes or Directives In Angular terminology " to add the validation on elements or form controls.
+    --- These are the some built in attributes which is not managed by Angular and your would get some browser built in validation for these attributes .
+    
+    --- For example
+
+        --> "required" attribute
+        --- When we add the "required" attribute on a element which is registered with "ngModel".
+        --- Then Angular takes the control and disable the browser built in validation and instead Angular validate them itself internally.
+        --- Because when we add such attributes on a elements which are registered with  "ngModel", the Angular treats them as a Directive.
+        --- And for example in "required" attribute case, Angular it self checks the value of an Input if its empty or not.
+
+        --- Along with "required", we can also specify the "minLength", "email" or "pattern if you want to validate any expression"
+        --- These are the most common attributes which are basically consider as "Directive" by angular when you applies them on a element.
+        --- Angular will then enforce the validation when we apply them on a element.
+
+
+        --> Impact after adding the Attributes/Directives on a Input elements
+
+        --- After adding these validation directives , Angular changes the states of the FORM internally.
+        --- Basically Angular starts validating every field and changing the "control" and as well "form" status accordingly.
+        --- For example, By adding "required" , the default state of our FORM moves to ""INVALID"" status , because none of the input field has any data entered in it.
+        --- In case of "email" validation, even if we have entered the data in the field and that is not matching with email format then also our "email" control (inside control object) and "form" status becomes ""INVALID"".
+        --- You can refer the "error" object (map) to check which validation is failing (Inside control object against the respective form control).
+            --- It contains the "key" as  "validator name" and "boolean" as a value. It returns "true" if that validation fails.
+
+
+            import { Component } from '@angular/core';
+            import { FormsModule, NgForm } from '@angular/forms';
+
+            @Component({
+            selector: 'app-login',
+            standalone: true,
+            imports: [FormsModule],
+            template: `
+            
+                <form #form="ngForm" (ngSubmit)="onSubmit(form)">
+                    <h2>Login</h2>
+
+                    <div class="control-row">
+                        <div class="control no-margin">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" name="email" ngModel required email/>
+                        </div>
+
+                        <div class="control no-margin">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" name="password" ngModel required minlength="6"/>
+                        </div>
+
+                        <button class="button">Login</button>
+                    </div>
+                </form>      
+            
+            `,
+            styleUrl: './login.component.css',
+            })
+            export class LoginComponent {
+
+             onSubmit(formData: NgForm) {
+                    console.log(formData);
+                    if(!formData.form.valid) { //// Restricting user from Submitting if Form is Invalid.
+                        return;
+                    }
+                    const enteredEmail = formData.value.email;
+                    const enteredPassword = formData.value.password;
+                    console.log('enteredEmail', enteredEmail);
+                    console.log('enteredPassword', enteredPassword);
+                }
+            }
+
+
+
+
+    // Using Form Validation Status to Provide the User Feedback
+
+    --- Now we are ready with the validations and we know how can we restrict the user from submitting the form if it's invalid.
+    --- That's Okay, but now we need to also show the some error message or give some feedback to the user regarding the invalid status.
+    --- So that helps them to make the necessary changes in the form.
+    --- In this section, we will see how can we add the "validation" message and which is ideal way to show the "feedback or error message" to the end user.
+
+    --- Now we have both "email" and "password" fields are "required".
+    --- So the scenario is "Whenever we touch both the fields and keep them empty so basically if we do not entered any thing then we must populate an error message".
+    --- To achieve this scenario we will see why and what can, we avoid while handling such scenario .
+
+    --- So on the basis of our knowledge we will use the "form"(template reference variable which hold "NgForm" object) to check the controls are valid or not, right ?
+    --- Let's see what happen when we add that code.
+
+
+            <form #form="ngForm" (ngSubmit)="onSubmit(form)">
+                <h2>Login</h2>
+
+                <div class="control-row">
+                    <div class="control no-margin">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email" ngModel required email/>
+                    </div>
+
+                    <div class="control no-margin">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" name="password" ngModel required minlength="6"/>
+                    </div>
+
+                    <button class="button">Login</button>
+                </div>
+
+                --> Here you will get syntactical error . Because "control is having index signature as Type so you must need to use "['email']" for accessing any property".
+                --> Error ==> "Property 'email' comes from an index signature, so it must be accessed with ['email']."
+                //   @if (form.form.controls.email.touched && form.form.controls['password'].touched && form.form.invalid ) {
+                //     <p class="control-error">
+                //         Invalid values detected. Please check your input.
+                //     </p>
+                //     }
+
+
+                // Correct syntax
+                @if (form.form.controls['email'].touched && form.form.controls['password'].touched && form.form.invalid ) {
+                <p class="control-error">
+                    Invalid values detected. Please check your input.
+                </p>
+                }
+        </form>
+
+        --- In this code we are using "form" object to extract the validation status of "email" and "password" for field.
+        --- However this code will break into a browser, despite adding correct syntax.
+        --- You will get below error in browser console.
+
+            --> Error ==> "main.ts:5 ERROR TypeError: Cannot read properties of undefined (reading 'touched')"
+
+        --> Why are we getting this Error , even using the Form Object in a correct format.
+
+        --- Now, think from base.
+        --- We creates our template code first, right ?
+        --- Basically we defines our template first then we register them with ngModel and then after that Form Object gets created by Angular.
+        --- Now While using Template driven approach , when our template render first time the Angular form object is not available.
+        --- Instead , our template defines the form structure therefore its only available thereafter.
+        --- Therefore control specific data will not be there in the form object during initial render.
+        --- Because during first time controls were not setup and registered.
+
+        --- Therefore we cannot use this way check the validations and show the feedback to the end user.
+
+
+        --> Correct way to validate and show the feedback to the user in Template Driven Approach
+
+        --- Now we have a more robust way to add the validation checks  and show the error message.
+        --- Here we are accessing more control specific information from the template.
+        --- In this approach , we are creating a template reference variable on the control itself.
+        --- By default we know the "template reference variable points the specific DOM object  for example if we add template reference variable on Input then it will point "HTMLInputElement"".
+        --- As mentioned in the first line, we need a control specific information to add these validation.
+        --- So far , we learned that "ngModel" is responsible for registering our elements as controls inside a Form object.
+        --- Here we are using the again special syntax of assigning an "expose value by directive or component", like we did "#form="ngForm"".
+        --- In this case we are assigning the value as "ngModel" to "template reference variable" that we created on a controls.
+        --- Angular accepts only expose values from a directive or component, it can not allow to assign/store any other value .
+        --- Since "ngModel" is directive is expose by Angular and it is also a controls specific then we can assign/store it as value to template reference value.
+
+
+            <form #form="ngForm" (ngSubmit)="onSubmit(form)">
+                <h2>Login</h2>
+
+                <div class="control-row">
+                    <div class="control no-margin">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email" ngModel required email #emailControl="ngModel"/>
+                    // This syntax will tells Angular that we wanna store this control object (created by Angular under the hood) in template reference variable
+                    // On hovering on "#emailControl", we can see "(reference) emailControl: NgModel" --> Which is the form control type.
+                    </div>
+
+                    <div class="control no-margin">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" name="password" ngModel required minlength="6" #passwordControl="ngModel"/>
+                    </div>
+
+                    <button class="button">Login</button>
+                </div>
+                @if (emailControl.touched && passwordControl.touched && form.form.invalid) {
+                <p class="control-error">
+                    Invalid values detected. Please check your input.
+                </p>
+                }
+                </form>
+
+        --- So that's the easier way and the working way hereof getting access to control specific information inside of your template.
+        --- Now there won't be any error in the browser's console.
+
+    
+    // Adding Validation Styles.
+
+    --- As of now, we have manage the form values, added validations and provided user feedback based on that.
+    --- Now , we want to show the make these validation visually.
+    --- Meaning as of now, we know that the form controls are invalid and we are showing feedback based on that.
+    --- Now, we will add styling to these form controls so they will be invalid visually.
+    --- Angular helps us to style the form controls base on their current control status.
+    --- Since we are registering our controls using "ngModel", angular add some built in classes on every control (Which are registered with ngModel).
+    --- When you inspect the controls in the browser , you can see "ng-untouched", "ng-touched", "ng-pristine", "ng-dirty", "ng-valid" and "ng-invalid" classes added in the "class" list of the control.
+    --- These classes refers to the different states of your form control.
+    
+    --- For example , if you have opened your form and haven't touched any control then the classes will be "ng-untouched", "ng-pristine" and "ng-invalid"
+        --> Explanation
+        
+        "ng-untouched"
+        --- You have Not touched your form control.
+        --- Once you touch the form control, it changes to "ng-touched".
+
+        "ng-pristine"
+        --- You have not entered any value in the form-control.
+        --- Once you start entering anything the classes becomes "ng-dirty".
+
+        "ng-invalid"
+        --- Your form control is having invalid status.
+        --- Because it contains some validators like "required" or any other validators.
+        --- Basically these applied validation needs to be pass to change the class .
+        --- Once you pass these validations , the class will change to "ng-valid" .
+
+        --> Let's see how the DOM look like after adding these classes.
+        --- Important to note, we do not add these classes explicitly.
+        --- Angular add these classes automatically when your form gets loading in the browser.
+        --- Only thing that, your controls need to be registered with "ng-model".
+        --- Another important tip, we can apply the styling on the basis of these classes in  our code even though we are not passing them in a template.
+        --- So we can check the status of the form control based on these classes and add the styling on the top of it.
+
+            // Template Code
+
+
+                  <form #form="ngForm" (ngSubmit)="onSubmit(form)">
+                        <h2>Login</h2>
+
+                        <div class="control-row">
+                            <div class="control no-margin">
+                            <label for="email">Email</label>
+                            <input id="email" type="email" name="email" ngModel required email #emailControl="ngModel"/>
+                            </div>
+
+                            <div class="control no-margin">
+                            <label for="password">Password</label>
+                            <input id="password" type="password" name="password" ngModel required minlength="6" #passwordControl="ngModel"/>
+                            </div>
+
+                            <button class="button">Login</button>
+                        </div>
+                        @if (emailControl.touched && passwordControl.touched && form.form.invalid) {
+                        <p class="control-error">
+                            Invalid values detected. Please check your input.
+                        </p>
+                        }
+                </form>
+
+
+            // Compiled DOM Code in browser
+
+            <form _ngcontent-ng-c2400057922="" novalidate="" class="ng-untouched ng-pristine ng-invalid">
+            
+                <h2 _ngcontent-ng-c2400057922="">Login</h2><div _ngcontent-ng-c2400057922="" class="control-row">
+                
+                <div _ngcontent-ng-c2400057922="" class="control no-margin">
+                
+                
+                    <label _ngcontent-ng-c2400057922="" for="email">Email</label>
+                    
+                    <input _ngcontent-ng-c2400057922="" id="email" type="email" name="email" ngmodel="" required="" email="" ng-reflect-required="" ng-reflect-email="" ng-reflect-name="email" 
+                    ng-reflect-model="" class="ng-untouched ng-pristine ng-invalid">
+                     // Here you can see the classes have been added on a form control as well.
+                    
+                </div>
+            
+            <div _ngcontent-ng-c2400057922="" class="control no-margin">
+            
+                    <label _ngcontent-ng-c2400057922="" for="password">Password</label>
+                    
+                    <input _ngcontent-ng-c2400057922="" id="password" type="password" name="password" ngmodel="" required="" minlength="6" ng-reflect-required=""
+                     ng-reflect-minlength="6" ng-reflect-name="password" ng-reflect-model="" 
+                     class="ng-untouched ng-pristine ng-invalid">
+                    // Here you can see the classes have been added on a form control as well.
+                     
+            </div>
+                     
+         <button _ngcontent-ng-c2400057922="" class="button">Login</button></div><!--container--></form>
+
+         --> Apply styling on the basis of these "ng" classes.
+
+         --- As mentioned above, we can use these "ng" classes and apply the styling based on their status.
+         --- Below is styling that we are applying when the form=control status changes.
+         --- These styling will be apply when user touche the form control and entered some value.
+         --- And then if that value does not meet the validation.
+         --- For example, if we touch the "email" field , we entered some value but that value does not match with email format. Then that form control becomes touched, dirty and invalid.
+         
+                .control:has(.ng-invalid.ng-touched.ng-dirty) label {
+                    color: #f98b75;
+                    }
+
+                    input.ng-invalid.ng-touched.ng-dirty {
+                    background-color: #fbdcd6;
+                    border-color: #f84e2c;
+                    }
+
+
+
+
+    // Handling Template Driven Programmatically
+
+    --- So far, we learned a lot about Template Driven form.
+    --- Now the time has come, to access them in Component i.e In Typescript file.
+    --- As of now, we are accessing them by passing "Form" object to "submit" function, when "ngSubmit" event occurs.
+    --- However, accessing this is only ideal when we want to have access form object when submitting form.
+    --- In real world application, we need to access the form before submitting it or there are some cases when we need capture every event which is happening on our controls or form.
+    --- In this section , we are implementing such use case and accessing form before submit and along with it what are the other operations that can perform on the form.
+
+    --> Use case
+    --- Save the "email" in the local storage whenever user starts typing into email input field.
+    --- And If user reload the page then prepopulated the stored email field value in the input box.
+    --- Also "reset" the form when user submit the form.
+
+    --> Code snippet
+
+
+                import { afterNextRender, Component, DestroyRef, inject, viewChild } from '@angular/core';
+                import { FormsModule, NgForm } from '@angular/forms';
+                import { debounceTime } from 'rxjs';
+
+                @Component({
+                selector: 'app-login',
+                standalone: true,
+                imports: [FormsModule],
+                templateUrl: './login.component.html',
+                styleUrl: './login.component.css',
+                })
+                export class LoginComponent {
+                private form = viewChild.required<NgForm>('form');
+                private destroyRef = inject(DestroyRef);
+                constructor() {
+                    afterNextRender(() => {
+
+                    const savedForm = window.localStorage.getItem('saved-login-form');
+                    console.log(savedForm)
+                    // this.form().form.get('email')!.setValue(JSON.parse(savedForm).email);
+                    //  Above line will give error if we do not wrapped inside a setTimeOut"Error ==> Cannot read properties of null (reading 'setValue')"
+                    if(savedForm) {
+                        setTimeout(() => {
+                            this.form()?.form.get('email')?.setValue(JSON.parse(savedForm).email);
+                        }, 1)
+                    }
+
+
+                    const subscription =  this.form()?.valueChanges?.pipe(debounceTime(500)).subscribe({
+                        next: (value) => {
+                        console.log('valueChanges', value);
+                        window.localStorage.setItem('saved-login-form', JSON.stringify({
+                            email: value.email
+                        }));
+                        }
+                    })
+
+                    this.destroyRef.onDestroy(() => {
+                        if(subscription) {
+                            subscription.unsubscribe();
+                        }
+                    })
+                    })
+                }
+
+                onSubmit(formData: NgForm) {
+                    console.log(formData);
+                    if(!formData.form.valid) {
+                    return;
+                    }
+                    const enteredEmail = formData.value.email;
+                    const enteredPassword = formData.value.password;
+                    console.log('enteredEmail', enteredEmail);
+                    console.log('enteredPassword', enteredPassword);
+
+                    formData.form.reset();
+                    }
+                }
+
+
+    --> Explanation
+
+    --- In this code snippet , we have saved the "email" value in local storage and prepopulated after re-loading the component.
+    --- Let's understand each part of code along with "why" we have use that.
+
+    1) "reset"
+    --- Here, we are resetting our form when user clicks on submit or when submit event occurs.
+    --- "reset" , method is available on "form" object.
+    --- "reset", means not just resetting the value, but it resetting the entire form state.
+    --- After reset your forms controls again becomes "ng-untouched", "ng-pristine" and "ng-invalid". Basically it again set to its original state.
+    --> Note --> When you have button in a form which contains a attribute as "type=reset", then you don't need to reset explicitly.
+            --- Because HTML W3C provides that built in feature base on the type of button. 
+            --- However Angular recommends to reset form using Angular methods so the internal states of the form also gets reset.
+            --- To remove the built in browser functionality keep the button type to "type="button"" instead of "reset".
+            --- So browser will treat that button as a regular button.
+
+    2) "other" information in form object.
+    --- Along with the "reset", there are plenty of methods and properties are available on form object.
+    --- where you can set the validators, remove them , set the status of form control like dirty, touch.
+    --- Basically we can make the use of these methods and properties to manually perform the operations our form.
+    --- However, since we are using "Template Driven Approach" so we can possible handle all the configuration from a template,  because using these things are more advance case.
+
+    3) Access "form" programmatically using "viewChild".
+    --- Here we are using "viewChild" (signal function) to get the access of "NgForm".
+    --- We are accessing a template reference variable which is holding a value of "NgForm" in a template.
+    --- As signal function is generic type, we are passing additional type information to it so that Typescript understand the type of it.
+    --- Now as per our use case, we need to capture the email value whenever we type anything in a email form control.
+    --- Basically we need to listen and store that value in local-storage when any key strokes is happened in a form.
+
+        --> using "afterNextRender"
+        --- Once we get the access of the  "Form" using "viewChild", we need to decide how and where can we access it.
+        --- Where ==> We can access this form reference inside the "afterNextRender" hook.
+        --- This hook accepts a callback function, which executes only once when component has been rendered for the first time.
+        --- This hook we can place inside a "constructor".
+        --- The reason of using this hook because we are using "template driven form".
+        --- And this form is only gets available in a component when template finishes it rendering.
+        --- After the template rendering our form gets initialized and then our "afterNextRender" hook gets call.
+        --- That' why we can use "afterNextRender" hook to interact with our form.
+
+
+        --> using "valueChanges" observable
+        --- Now we get the hold of the form inside "afterNextRender".
+        --- Now, we have to listen or we must get notified whenever any value changes in the form or if user can make changes in the form field.
+        --- To get the hold of these notification on every key stroke , we can make the use  "valueChanges" observable.
+        --- This property is available on form object.
+        --- The valueChanges observable allows you to listen to changes in the form field's value. 
+        --- This is helpful when you want to react to user input in real time, such as validation, enabling/disabling other fields, or triggering specific actions.
+        --- "valueChanges" emits Whenever the user modifies the value of the associated form control or form.
+        --- The "value" which emitted by valueChanges is having shape of {"email": '', "password": ""} , basically form control along with it is values.
+
+        --> using "debounceTime" with "valueChanges"
+        --- Using debounceTime with valueChanges is a common practice in Angular to reduce the frequency of events triggered by the user, particularly for inputs that change frequently, such as text fields.
+        --- It delays the emission of values by the specified time.
+        --- Basically updating something or triggering some implementation on every key stroke is not best practice.
+        --- When you work on the enterprise level application where complex implementation is happening on every key stroke impact on the performance of app.
+        --- Using "debounce time", we can delay the emission of current value till the mention time. So when user  stops entering details in field and time passes that threshold then the "next" event emits.
+        --- So for example of I type "A", then user will check if user type any other character in next "500 milliseconds".
+        --- If I type "B", the user will cancel the previous emission and consider the latest value.
+        --- And then If I stopped entering the details then only "next" event will get emitted, So the latest value  will be "AB" 
+
+        --> Prefill the saved details
+
+        --- After saving the email details in the windows's local storage.
+        --- Now we have to fetch these details when our component loads.
+        --- SO we retrieving these details and parsing it so that we can save the value in the form field.
+        --- Just a note, localstorage accepts the data in json format. So we need to stringify it when we saved it and need to parse it while retrieving it.
+        --- Here, we are using "setValue" method to set the value for a specific form control which is available on formControls of forms object.
+        --- We can also set the value for entire form object as well. 
+            --- In that case we will need to use the "setValue" on form and need to pass the object to setValue method.
+            --- This object will contains the "keys" or "properties" of control and value will be the value that we need to stored in those controls.
+        --- While setting up the value you have observed "setTimeOut" thing.
+
+            --> Why we used the setTimeout while setting up the value
+
+            --- If you do not use the "optional chaining" and try to access the the setValue you will get below error in console after loading app in browser.
+                //"Error ==>  Cannot read properties of null (reading 'setValue')"
+            --- This error is because till the time Template has initialized, even Form Object is also initialized,
+                --- but "formControl" object is empty i.e is not fully initialized yet.
+                --- Therefore Angular is not able to find any "email" control inside control object.
+                ---Because control object does not contain anything as of now.
+            --- Due to this we are delaying this setValue logic by 1 milliseconds.
+            --- That will hep Angular to update tick thats performed behind the scene.
+            --- This is not a elegant solution but somehow workaround to update "Template Driven form" to handle prepopulated fields.
+            --- That's why at the beginning of this section we said that "Template driven form has some limitations"
+                --- And we cannot use them for a more advance and complex use cases.
+
+
+    --> Summary
+
+    --- In the end that's all about the "Template driven forms".
+    --- That's how you create a template driven forms by adding ngModel and FormsModule.
+    --- Most of the things Angular manages for your behind the scene.
+    --- For Basic and Intermediate use cases we can make the use of Template Driven forms.
+    --- However due to some limitations, we cannot use them for more Advance use cases.
+
+    ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    // Reactive Forms
+
+    --> Introduction
+
+    --- So far we learned and gain the knowledge about the "Template Driven Forms".
+    --- Now, its time to learn more advance approach of creating forms i.e "Reactive Forms".
+    --- This is the main and more advance way to to create the forms.
+    --- The important difference between  "Template Driven Forms" and "Reactive forms" is that in 
+        --- "Reactive Forms", we don't setup the form in the template.
+        --- However, we can connect the form to template elements .
+        --- But we do not register the form in the template.
+        --- WE don't initialize the form with help of template.
+        --- Instead we initialize the form and register them inside a our Typescript code.
+
+    --- Let's see how can we register our form in a typescript code.
+
+    // Register the Form in Typescript code/file.
+    --- As mentioned above, in Reactive Forms we are registering Form inside a Typescript file.
+    --- For that first we need to import a "FormGroup" class.
+
+        --> "FormGroup class"
+            --- WE need to instantiate this class to create a "FormGroup" object.
+            --- FormGroup class requires an object as a initial value.
+            --- Remember in template driven form "form" object points to "FormGroup" as Type.
+            --- Here also the we need to create an instance of FormGroup.
+            --- Therefore, we can create one property at  a class level, which holds the instance of the "FormGroup" class.
+            --- The "FormGroup" class accepts an Object as argument during instantiation.
+            --- This object accepts "keys" and their value is "FormControl" or "Nested FormGroup"
+            --- Basically this object decides "FormControl" structure inside a FormGroup.
+            --- While some controls may hold the another FormGroup as well, that's why I mentioned "Nested FormGroup as well".
+
+        --> "FormControl class"
+
+            --- Now FormGroup class requires an object which can holds the instance of FormControl.
+            --- Therefore, to create an instance of FormControl we need  "FormControl" class.
+            --- This class does not require any initial value during instantiation but, we can set the default value of FormControl by passing "'' i.e empty string".
+            --- We are setting up "key" names i.e control names which can be relate to thee Input fields that we have added inside a template.
+            --- Because that would become easy to connect these controls to these input elements.. 
+            --- "FormControl" class accepts a generic type. Basically infer the type base upon the default value.
+            --- You can assign any type you want to FormControl.
+
+        --> Code Snippet (Register a Form and Controls in a Typescript file)
+
+                import { Component } from '@angular/core';
+                import { FormControl, FormGroup } from '@angular/forms';
+
+                @Component({
+                    selector: 'app-login',
+                    standalone: true,
+                    templateUrl: './login.component.html',
+                    styleUrl: './login.component.css',
+                })
+                export class LoginComponent {
+                    form = new FormGroup({
+                        email: new FormControl(''),
+                        password: new FormControl('')
+                    });
+                }
+
+
+    // Syncing Reactive Form Definition & Template (Connection oof Typescript Form code with Template code)
+
+    --- To connect a Form to a Template, we need some directives .
+    --- In reactive forms, we need to first import the "ReactiveFormsModule" from "@angular/forms".
+    --- This module will help us to add these directives into the template.
+    --- In Template driven forms , it was the "FormsModule", now here it is "ReactiveFormsModule."
+    
+        --> Adding Directive to "control"
+
+        --- Now, we need to connect controls that we have defined in Typescript code to the (Input) elements in the Template.
+        --- Angular provides us two ways to bind the control.
+
+        1) Using "[formControl]" directive as  Property Binding.
+        --- Here we can use the "formControl" directive as property binding and we can pass the form control that we have defined in ts code as expression.
+
+        2) Using "formCOntrolName" Directive as attribute.
+        --- In this way, you just need to pass the name of the control that you have defined as a part of FormGroup Object.
+        ---  Basically the "key" that we did pass as a initial value during the instance creation of FormGroup.
+
+        --- By using any one of the approach now you can link the control from the typescript code the respective element inside a template.
+        --- Alone this connection will not work.
+        --- Because after doing this , if you run the application you will get the below error in the console.
+            --> Error ==> formControlName must be used with a parent formGroup directive. You'll want to add a formGroup directive and pass it an existing FormGroup instance (you can create one in your class).
+        --- This error is telling you also need to connect a form with the form that you have registered in a Typescript code.
+        --- Because Angular is not able to find the "formControlName" because our FORM is not connected to the Template.
+            
+        --> Note --> 
+            --- This error will only appear when you have not connected Form with Template.
+            --- And You are using "formControlName" directive.
+            --- If your are using "formControl" direct then this error "will not appeared" , even if you have not connect Form to TEMPLATE.
+            --- However that will turn out into unexpected behavior, because Angular will not aware about your Form.
+
+        --> Connecting "Form" from Typescript to a Template.
+        --- To connect a Form to Template, we need a special directive , called as "FormGroup" directive.
+        --- This FormGroup directive is property binding where we can pass the "value as instance of FormGroup" that we have created in the Typescript file.
+        --- Basically we can pass the "variable which holds the instance of the FormGroup class".
+        --- We need to ad this "FormGroup" directive on "Form Element".
+
+        --> Code Snippet (Connecting / Syncing Form to Template)
+
+
+                import { Component } from '@angular/core';
+                import { FormControl, FormGroup } from '@angular/forms';
+
+                @Component({
+                    selector: 'app-login',
+                    standalone: true,
+                    templateUrl: './login.component.html',
+                    styleUrl: './login.component.css',
+                })
+                export class LoginComponent {
+                    form = new FormGroup({
+                        email: new FormControl(''),
+                        password: new FormControl('')
+                    });
+                }
+
+                //Template code
+                <form [formGroup]="form"> //// "[formGroup] directive for connecting Form"
+                    <h2>Login</h2>
+
+                    <div class="control-row">
+                        <div class="control no-margin">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" [formControl]="form.controls.email" />  //// "formControl" directive to connecting control.
+                        </div>
+
+                        <div class="control no-margin">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" formControlName="password"/>  //// "formControlName" directive to connecting control. Alternative and shorter way to connect.
+                        </div>
+
+                        <button class="button">Login</button>
+                    </div>
+                </form>
+
+
+    --- That's How you can connect your Setup a Form in Typescript code and then connect to Template using "ReactiveFormsModule" ,"formGroup" and "formControlName" or "formControl" directive.
+    
+    
+    // Handling Form Submission.
+
+    --- In reactive forms we can use the same "ngSubmit" event that we have been using for the "Template Drive Forms".
+    --- The only difference is that we do not need to pass the any argument to submit function that we are using to listen this event in Typescript code.
+    --- Because In template driven approach we were passing the "Form Instance that has been created in Template via this event so that we can access it during submit".
+    --- While in Reactive forms we are already creating form inside a typescript code, so we do not need to pass it via submit event.
+
+
+        --> Important things
+
+        --- When you logged the Form object that you have created in your Typescript code, you will see all the properties and methods that we have saw,
+            --- In a Template driven approach's "FormGroup" object.
+        --- Here also you will get controls, status of the control, pristine property , value property  and so on...
+        --- But we have some benefits for formGroup that we have created using Typescript code.
+        --- Since we have created form inside a Typescript file, we get the full Typescript support while accessing anything inside a FormGroup.
+        --- Because Typescript understands the shape of our Form.
+        --- For example, "form.control.email" here typescript is aware about that "control" object contains "email and password inside it."
+        --- Therefore it provides supports while accessing properties.
+        --- While in Template driven form "control" was pointing to "index signature" or  "any", because Typescript was not aware about the properties which are present in control obj.
+            --- Because there we were setting up form inside a Template. 
+
+
+        --> Code snippet (Form Submission)
+
+              onSubmit() {
+                console.log(this.form);
+                const enteredEmail = this.form.controls.email;
+                const enteredPassword = this.form.controls.password;
+                console.log(enteredEmail, enteredPassword);
+            }
+
+            <form [formGroup]="form" (ngSubmit)="onSubmit()">
+                     ....
+                        .....
+            </form>
+
+
+    // Adding Validators to Reactive Forms
+
+    --- In Template driven Form, we have added validators by adding attribute or directive on Input elements so that Angular can apply validations on the basis of that.
+    --- Here, In reactive forms, since we are managing everything in a Typescript code , we need to add these validator inside Typescript code itself.
+    --- Now, either we can add the validators while creating "formControl" instance or we can set the dynamically using "setValidators" method on control.
+        --> Dynamically set the validators -> " this.form.controls.email.setValidators(Validators.required)"
+
+    --- Let's see below code and understand how we have added "Validators" to our Form Controls.
+
+        // Code Snippet
+
+                --> TypeScript Code
+
+                    import { Component } from '@angular/core';
+                    import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+
+                    @Component({
+                    selector: 'app-login',
+                    standalone: true,
+                    imports: [ReactiveFormsModule],
+                    templateUrl: './login.component.html',
+                    styleUrl: './login.component.css',
+                    })
+                    export class LoginComponent {
+                    
+                    // Passing Validators using "Configuration Object so we can have more control on them"
+                    form = new FormGroup({
+                        email: new FormControl('', {
+                            validators: [Validators.required, Validators.email]
+                        }),
+                        password: new FormControl('' ,{
+                        validators: [Validators.required, Validators.minLength(6)]
+                        })
+                    
+                    });
+
+                    // Alternate syntax for Passing Validators
+                    
+                    form = new FormGroup({
+                        email: new FormControl('', [Validators.required, Validators.email]),
+                        password: new FormControl('' ,[Validators.required, Validators.minLength(6)])
+                    
+                    });
+
+                    get emailIsInvalid() {
+                        return (
+                        this.form.controls.email.touched &&
+                        this.form.controls.email.dirty &&
+                        this.form.controls.email.invalid
+                        )
+                    }
+
+                    get isPasswordIsInvalid() {
+                    return (
+                        this.form.controls.password.touched &&
+                        this.form.controls.password.dirty &&
+                        this.form.controls.password.invalid
+                    )
+                    }
+
+                    onSubmit() {
+                        console.log(this.form);
+                        // Adding Validators Dynamically
+                        // this.form.controls.email.setValidators([Validator.required])
+                        // OR
+                        // this.form.controls.email.addValidator([Validator.required])
+                        const enteredEmail = this.form.controls.email;
+                        const enteredPassword = this.form.controls.password;
+                        console.log(enteredEmail, enteredPassword);
+                    }
+                    }
+
+                --> Template Code
+
+                <form [formGroup]="form" (ngSubmit)="onSubmit()">
+                    <h2>Login</h2>
+
+                    <div class="control-row">
+                        <div class="control no-margin">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" [formControl]="form.controls.email" />
+                        </div>
+
+                        <div class="control no-margin">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" formControlName="password"/>
+                        </div>
+
+                        <button class="button">Login</button>
+                    </div>
+
+                    @if (emailIsInvalid) {
+                        <p class="control-error">Please enter a valid email address.</p>
+                    }
+                    @if (isPasswordIsInvalid) {
+                        <p class="control-error">Please enter a valid password (at least 6 characters long).</p>
+                    }
+                    </form>
+
+
+        // Explanation
+
+        --- In above code you can see we have we can add the validators at the time of creation or we can add them dynamically if we require.
+        --- Most of the time, we add the validators at the time of Form Creation.
+        --- Usually we can pas the validators using 2 main ways. Either we can pass the configuration object or Pass the validator Function inside a array.
+        --- We can pass the validators as a second argument while first is use to set the default value (While creating formControl instance using FormControl class).
+        --- The validator configuration object contains below properties
+
+                  1) validators?: ValidatorFn | ValidatorFn[] | null;
+                  --- The list of validators applied to a control.
+                  
+                  2) asyncValidators?: AsyncValidatorFn | AsyncValidatorFn[] | null;
+                  --- The list of async validators applied to control.
+
+                  3) updateOn?: 'change' | 'blur' | 'submit';
+                  --- The event name for control to update upon.
+                  --- Basically we can control when the it should be updated.
+                  --- Basically on which event it should be updated.
+
+                  4) nonNullable
+                  --- Whether to use the initial value used to construct the `FormControl` as its default value  as well. 
+                  --- If this option is false or not provided, the default value of a FormControl is `null`.
+                  --- When a FormControl is reset without an explicit value, its value reverts to its default value.
+
+        --- Among these configuration options, we are using "validators"
+        --- If we have multiple Validators, then we can pass array of an Validator Function or else for a single, we can pass ValidatorFn only.
+        --- To pass the built in validator FN, we can import  "Validators class".
+        --- These class contains some functions/methods in it like "required", "email", "pattern", "maxLength" , "minLength" and so on.
+        --- We can also pass our own custom validator FN as well.
+        --- Now we need to pas this function inside a Validators array.
+        --- Remember, we just need to pass them  "NOT invoked NOR execute".
+        --- Angular will call them behind the scene to validate each and every control and eventually form.
+        --- By adding these Validators , Angular will keep the track of the control validity status and overall form validity status just like did it in the Template driven form.
+
+        --> Important Note
+
+        --- Just like Template driven approach , Reactive form also adds the "ng-untouched", "ng-touched", "ng-pristine", "ng-dirty", "ng-valid" and "ng-invalid" classes
+        --- So again base on the validation status of  form and controls we can use these classes to update the styling .
+
+
+    // Custom Validators
+
+    --- IN previous sections in both Template Driven and Reactive Form approach, we saw that how can we create the validators.
+    --- Now, we can create the custom validator so that we can add the validations basis on our need.
+    --- Creating a Custom validator in a Template driven form is bit more complex than creating in a Reactive Forms.
+    ---  As we learned that Template Driven forms needs a directive to validate the Form Control.
+    --- So we need to create the our custom directive so that it will validate the respective form control.
+    --- Along with creating directive you need to do some configuration, so that Angular will register that directive as a Validator and perform the validation.
+
+        --> Template driven Form ==> Custom Validator
+            https://angular.dev/guide/forms/form-validation#adding-custom-validators-to-template-driven-forms
+            ---Ensure you create a own custom directive for Template driven Form and understand it's associated configuration.
+
+        --> Reactive Forms ==> Custom validator
+
+        --- Creating custom validator in Reactive Forms  is very straight forward and easy as compared to Template Driven Forms.
+        --- IN previous section,we saw that we just need to provide a validator function to a form control and ANgular validates that formControl based on that function.
+        --- Let's create a Custom validator/Function for Reactive Forms.
+
+        --- In below code snippet , we have created a "Custom Validator Function" .
+        --- Let's understand it how it works.
+
+                --> Code Snippet
+
+                        import { Component } from '@angular/core';
+                        import {
+                        AbstractControl,
+                        FormControl,
+                        FormGroup,
+                        ReactiveFormsModule,
+                        Validators,
+                        } from '@angular/forms';
+
+
+                        // Custom Validator Function
+                        // As of now created at class level, but you can create it in a different file,
+                        function mustContainQuestionMark(control: AbstractControl) {
+                        if (control.value.includes('?')) {
+                            return null;
+                        }
+                        return { doesNotContainQuestionMark: true };
+                        }
+
+                        @Component({
+                        selector: 'app-login',
+                        standalone: true,
+                        imports: [ReactiveFormsModule],
+                        templateUrl: './login.component.html',
+                        styleUrl: './login.component.css',
+                        })
+                        export class LoginComponent {
+                        form = new FormGroup({
+                            email: new FormControl('', {
+                            validators: [Validators.required, Validators.email],
+                            }),
+                            password: new FormControl('', {
+                            validators: [Validators.required, Validators.minLength(6), mustContainQuestionMark],
+                            // Using "mustContainQuestionMark" validator fn to validate the "password" form control
+                            }),
+                        });
+
+                        get emailIsInvalid() {
+                            return (
+                            this.form.controls.email.touched &&
+                            this.form.controls.email.dirty &&
+                            this.form.controls.email.invalid
+                            );
+                        }
+
+                        get isPasswordIsInvalid() {
+                            return (
+                            this.form.controls.password.touched &&
+                            this.form.controls.password.dirty &&
+                            this.form.controls.password.invalid
+                            );
+                        }
+
+                        onSubmit() {
+                            console.log(this.form);
+                            const enteredEmail = this.form.controls.email;
+                            const enteredPassword = this.form.controls.password;
+                            console.log(enteredEmail, enteredPassword);
+                        }
+                        }
+
+                --> Explanation
+                --- In above code snippet, we have created a "mustContainQuestionMark" a validator function to validate, 
+                    ---if  "password" form control "Question mark (?)" in its input field.
+                    --- So it will check the validity of the "password" form-control and our form and display the feedback to the user.
+
+                --- Basically these "validatorFN" are the function which takes the "control (Which is having type of  'AbstractControl') class" as argument.
+                --- When we pass this function to a formControl, Angular call/invoke this function automatically behind the scene when we starts interactive with Form and Form-Control.
+                --- During the invoking of these function, Angular passes "formControl" as a argument to this function.
+                --- This function returns "null" if form-control passes the validation or else you can return an error object or anything which can be descriptive.
+                    --- So it will tells why the validation fails.
+                    --- In our case  we are return "{ doesNotContainQuestionMark: true }" if our password control does not contain "?" in the value.
+                    --- Usually we must follow the similar approach, because that helps to identify the validation failure details.
+                    --- Because Angular uses this "{ doesNotContainQuestionMark: true }" as value and update in the "errors" object of the "formControl".
+                    ---  So it gets easy to show some error messages or feedback to error base on the specific validation failure.
+
+                --> Important tip
+
+                --- In above example, we have seen that we are just passing the validator function and Angular executes the same.
+                --- Now you might wondered about the "minlength"FN i.e "validators.minLength(6)".
+                --- You will say here we are executing the function.
+                --- No we are not executing this function.
+                --- Basically "Validators.minLength(6)" is a "Factor Function".
+
+                    // What is a Factory Function?
+                    --- A factory function is a function that returns another function (often called a higher-order function). 
+                    --- In the context of Angular validators, factory functions allow you to pass parameters to create customized validators.
+
+                --- So you can also create your Factory function for custom validators if that validation requires some addition configuration from user.
+    
+        --- That's how basically we can create our own custom validators.
+        --- Ensure you can practice for custom validators for Template Driven Forms.
+
+
+    // Custom Async Validators
+
+    --- In previous section, we have created Validator.
+    --- IN this we will be creating "async" validator.
+    --- Async validator is same as to validator but it returns a Observable.
+    --- It also accepts a control as Input and it is a function in the end.
+    --- Everything is same as a validation function except Async Validator  returns an Observable.
+
+    --- The main purpose of async validator to validate the value which is being entered by user with Some Backend data (HTTP Request) or Async event.
+    --- For example, sending the entered value to the server using HTTP Request and Based on its response decide the validation.
+
+    --- Here in our example, we are creating a Demo Case where we are validating the "email" address is valid or not.
+    --- The main goal of this validator is to return a "Observable".
+
+    --- In below example, we are checking if email is unique or not.
+    --- Though in reality this validation will happen at server side and base on server response we will either send "Observable(null)" or "Observable({notUnique: true})".
+    --- Here we are using "of" function to create an Observable.
+    --- "of" is rxjs observable creation function, which emits the value immediately which has been pass to it.
+
+
+        --> Code snippet
+
+                    import { Component } from '@angular/core';
+                    import {
+                    AbstractControl,
+                    FormControl,
+                    FormGroup,
+                    ReactiveFormsModule,
+                    Validators,
+                    } from '@angular/forms';
+                    import { of } from 'rxjs';
+
+
+                    function emailIsUnique(control: AbstractControl) {
+                        if (control.value !== 'test@example.com') {
+                            //// In real time this data would be validated using HTTP Request.
+                            return of(null);
+                        }
+                        return of({ nonUnique: true });
+                    }
+
+                    export class LoginComponent {
+                        form = new FormGroup({
+                             email: new FormControl('', {
+                            validators: [Validators.required, Validators.email],
+                            asyncValidators: [emailIsUnique]
+                            // Passing Async validator here.
+                            }),
+                            password: new FormControl('', {
+                            validators: [
+                                Validators.required,
+                                Validators.minLength(6),
+                                mustContainQuestionMark,
+                            ],
+                            }),
+                });
+
+        --> Explanation
+
+        --- Here, for the demo purpose , we are checking that entered email is unique or not.
+        --- If that matches with 'test@example.com' email then that is not a unique email and we will return a observable of "{ nonUnique: true }"
+        --- However if that is unique email then we will return "Observable of null".
+        --- We are passing "emailIsUnique" i.e async validator function to the array of "asyncValidators" property from our configuration object.
+        --- WE have dedicated property for "asyncValidators" , which holds an array of "validatorFN" if they are multiple.
+        --- If it is single function then we can pass it directly without Array Annotation.
+        --- & similar to validatorFN, we are also not executing the "asyncValidators" functions, Angular does that for us. WE simply need to pass them.
+
+
+        // Interacting with the FORM (Programmatically).
+
+        --- Here, we are adding some functionality to our reactive form and interacting programmatically.
+        --- Remember , we implement one functionality in "Template driven approach" where, we have been saving data into local storage and prefilling it when we reload the page.
+        --- Also we are listening to every keystroke, when user is entering the details.
+        --- While doing that we faced one issue where, form-control has not initialized even after template initialization, so we did added "setTimeOut" to handle that case while prefilling the details on component load.
+
+        --- Now, In Reactive forms, we are creating same scenario.
+
+        --- Let's understand the code snippet.
+
+        --> Code snippet (Interacting with Form Programmatically)
+
+                        import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+                        import {
+                        AbstractControl,
+                        FormControl,
+                        FormGroup,
+                        ReactiveFormsModule,
+                        Validators,
+                        } from '@angular/forms';
+                        import { debounceTime, of } from 'rxjs';
+
+                        // Reading the value from a local storage outside the component scope. 
+                        const savedFormInfo = window.localStorage.getItem('saved-login-info');
+
+                        let initialEmailValue = '';
+                        if(savedFormInfo) {
+                            // Mapping "initialEmailValue" when our file gets executed and we store the value from localstorage if any.
+                            const loadedForm = JSON.parse(savedFormInfo);
+                            initialEmailValue = loadedForm.email;
+                        }
+
+                        function mustContainQuestionMark(control: AbstractControl) {
+                        if (control.value.includes('?')) {
+                        return null;
+                        }
+                        return { doesNotContainQuestionMark: true };
+                        }
+
+                        function emailIsUnique(control: AbstractControl) {
+                        if (control.value !== 'test@example.com') {
+                        //// In real time this data would be validated using HTTP Request.
+                        return of(null);
+                        }
+                        return of({ nonUnique: true });
+                        }
+
+
+                        @Component({
+                        selector: 'app-login',
+                        standalone: true,
+                        imports: [ReactiveFormsModule],
+                        templateUrl: './login.component.html',
+                        styleUrl: './login.component.css',
+                        })
+                        export class LoginComponent implements OnInit {
+                        private destroyRef = inject(DestroyRef);
+                        form = new FormGroup({
+
+                        // "initialEmailValue" --> Will be empty if we do not have data in localStorage
+                        // "initialEmailValue" --> it will have some data if we already stored some data in a local storage.
+                        // Mapping of "initialEmailValue" is happening outside component class so it is accessible in entire file.
+                        // Mapping logic of "initialEmailValue" , will execute when this file executes. 
+                        email: new FormControl(initialEmailValue, {
+                            validators: [Validators.required, Validators.email],
+                            asyncValidators: [emailIsUnique]
+                        }),
+                        password: new FormControl('', {
+                            validators: [
+                            Validators.required,
+                            Validators.minLength(6),
+                            mustContainQuestionMark,
+                            ],
+                        }),
+                        });
+
+                        ngOnInit(): void {
+                        // Handling Saving data in the "ngOnInit" instead of "afterNextRender"
+                                const subscription = this.form.valueChanges.pipe(
+                                    debounceTime(500),
+                                ).subscribe({
+                                    next: (value) => {
+                                    window.localStorage.setItem('saved-login-info', JSON.stringify({
+                                        email: value.email
+                                    }))
+                                    }
+                                })
+                                if(subscription) {
+                                    this.destroyRef.onDestroy(() => {
+                                    subscription.unsubscribe();
+                                    })
+                                }
+                        }
+
+                        get emailIsInvalid() {
+                        return (
+                            this.form.controls.email.touched &&
+                            this.form.controls.email.dirty &&
+                            this.form.controls.email.invalid
+                        );
+                        }
+
+                        get isPasswordIsInvalid() {
+                        return (
+                            this.form.controls.password.touched &&
+                            this.form.controls.password.dirty &&
+                            this.form.controls.password.invalid
+                        );
+                        }
+
+                        onSubmit() {
+                        console.log(this.form);
+                        const enteredEmail = this.form.controls.email;
+                        const enteredPassword = this.form.controls.password;
+                        console.log(enteredEmail, enteredPassword);
+                        }
+                        }
+
+
+        --> Explanation
+
+        --- Here, we are interacting with our form in the ngOnInit.
+        --- WE are not  using "afterNextRender" , though we can use it.
+        --- However, here we are not depend upon initialization of template, because We have setup everything in a Typescript code it self.
+        --- Our form is already initializing in the typescript code.
+        --- So we do not need to wait till the template initialization.
+        
+        --> Using "valueChanges"
+        --- Similar to template driven approach, we are using "valueChanges" observable to listen the form values when they changes.
+        --- But, here, when we hover on the "value" which we are receiving as part of next event inside valueChanges, we can see the exact object of our formControl.
+        --- However during the template driven form , the Typescript was not able to figure it our the type of that value object.
+        --- Because there , the form initialization was happening at the Template level.
+
+        --> Set "initial value"
+
+        --- While prefilling the data you can follow below approaches.
+
+        1) Use "patchValue"
+        --- We can use the "patchValue" method as well.
+        --- This method is available on "form" object.
+        --- It basically accepts a "key ==> name of control" and  value.
+        --- Where you can assigned any value to the respective formControl.
+        --- It is flexible, partial updates when dealing with optional or incomplete data.
+
+                  this.form.patchValue({
+                    email: ''
+                    // This will never force you
+                    // You can only pass the key/formControl that you want to update with value
+                    })
+
+        2) Use setValue (At form level)
+        --- Similar to template driven approach, you can use the "setValue" at a formLevel.
+        --- Where you can pass the object of formControls and assign their values.
+        --- Or You can use "setValue" on individual control to set the value.
+        --- It use for strict, complete updates when you know the exact structure of your form.
+
+             this.form.setValue({
+                email: '',
+                password: ''
+                    // This will force you to pass all the formControl name/keys and their values
+                    // It is bit more strict
+                    // It will gives error if you miss any control or property while passing object to it.
+            })
+
+        3) Use setValue (at control level)
+
+        --- Here you can set the value to respective form control.
+        --- It is more strict about data type.
+        --- SO while setting the value you assigned the wrong data type , then you will get the compile time error from a Typescript.
+
+        --> However we have use the another approach to prefill the the form values.
+        4) Prefill data using Initial value setup approach at "formControl"
+        --- In our code, we have read the data from local storage outside of a class or component.
+        --- Basically we are reading this data when our file is executing.
+        --- Then we are storing that data in a variable.
+        --- This variable is having a scope for the entire file. So it can be accessible at any part of our Typescript file.
+        --- Then we take the advantage of "formControl".
+        --- During the creation of the form , formControl allows us to set the default value of it.
+        --- SO instead of empty "''", we have put this variable as a default value to "email" formControl.
+        --- By doing this, 
+                1) If we do not have data in localstorage then our variable hold the "''"
+                2) And If we have data in a localStorage then that variable gets filled with that data, 
+                    and eventually it get's mapped as a default value when our component class runs the formCreation code.
+        
+        --- Using this approach we do not need to use "patchValue" or "setValue".
+        --- This can be only applicable when your are using Reactive form approach because you have setup everything in a Typescript code.
+
+        // Drawback of this approach.
+
+        --- This approach is only recommended when your are "NOT using SSR" i.e Server Side Pre-rendering.
+        --- Otherwise you can use "patchValue" or "setValue" approach.
+        --- This approach will only work when you have a Pure Client Site Application.
+            
+
+
+    // Nested Form Groups
+
+    --- In Angular, nested FormGroup refers to embedding one or more FormGroup instances inside another FormGroup to represent a hierarchical or complex data structure. 
+    --- This is useful when managing forms with grouped fields or nested data.
+    --- FormGroup contains controls (FormControl, FormGroup, or FormArray). 
+    --- You can nest a FormGroup inside another FormGroup to logically group related controls.
+
+        --> Code Snippet
+
+            // TYpescript code (Here we have define the structure of a FormGroup and Nested FormGroup)
+            this.form = new FormGroup({
+                address: new FormGroup({
+                    street: new FormControl('', {
+                        validators: [Validators.required],
+                    }),
+                    houseNumber: new FormControl('', {
+                        validators: [Validators.required],
+                    }),
+                    postalCode: new FormControl('', {
+                        validators: [Validators.required],
+                    }),
+                    city: new FormControl('', {
+                        validators: [Validators.required],
+                    }),
+                    }),
+            });
+
+
+            // Template (HTML)
+
+            <form [formGroup]="form">
+
+            <fieldset formGroupName="address">
+            // Alternate syntax
+            <fieldset [formGroup]="form.controls.address">
+                <legend>Your Address</legend>
+
+                <div class="control-row">
+                    <div class="control">
+                    <label for="street">Street</label>
+                    <input type="text" id="street" name="street"  formControlName="street"/>
+                    </div>
+
+                    <div class="control">
+                    <label for="number">Number</label>
+                    <input type="text" id="number" name="number"   formControlName="houseNumber"/>
+                    </div>
+                </div>
+
+                <div class="control-row">
+                    <div class="control">
+                    <label for="postal-code">Postal Code</label>
+                    <input type="text" id="postal-code" name="postal-code" formControlName="postalCode"/>
+                    </div>
+
+                    <div class="control">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city" formControlName="city"/>
+                    </div>
+                </div>
+            </fieldset>
+            </form>
+
+        --> Explanation
+
+        --- We can use the same "FormGroup" class to create the nested formGroups.
+        --- The only thing we need to keep in mind that when we are creating nested structure in Typescript code, then it should reflect in the Template as well.
+        --- For example, In our case all the "address" related fields are comes under the "fieldSet" template.
+        ---  And In Typescript we have created nested "address" formGroup which hold all the address related formControls.
+        --- Now if we do not specify "formGGroupName" directive on "fieldset" element, then these address related fields still considered as part of top hierarchy.
+        --- Meaning they will still consider as direct control of the main formGroup object.
+        --- In that case we will get error "ERROR Error: Cannot find control with name: 'street'" and same error for "postalCode ,"houseNumber" and "city".
+
+        --- Hence to replicate same hierarchy that we define in the typescript code, there for we have added "formGroupName="address"" on a fieldset element.
+        --- "fieldset" element is the parent element for all these fields. Therefore it will help to achieve the same hierarchy in template .
+        --- While creating nested formGroup always ensure you add a "formGroupName" directive to the parent element which hold all these nested formControls.
+
+        --- after this necessary arrangements the same nested structure will replicate in the "controls" and "value" object as well with full of Typescript support..
+
+
+
+    // Form Array
+
+    --- A FormArray is a reactive form structure in Angular used to manage an array of form controls, form groups, or even other form arrays. 
+    --- It is highly dynamic and allows you to manage variable-length collections of form elements.
+    --- It is one of the way to create a dynamic forms.
+    --- Most relevant use cases is when you have list and you wanted to create the "formControls" on the basis of that list.
+    --- Here in this case since it is an Array , we do not have "key" which is associated with it while defining or creating formControl.
+    --- Here "formControlName" is consider as index or the position of the formControl inside a formArray.
+    --- FormArray is meant to be used whenever you have a list of controls where you don't necessarily need or want a unique name per a control, but where you instead have a list of controls that are meant to work together in the end.
+
+    --- Here for understanding purpose , we are creating one code snippet.
+    --- However it is very simple and straight forward use code snippet.
+    --> Ensure you check the below blog to practice more advance use cases for FormArray
+
+        // Reference
+        https://medium.com/@negidharmendra98/mastering-dynamic-form-generation-in-angular-with-formarray-60dc5e3997f3
+
+        // Typescript code (Here we have define the structure of a FormArray)
+            this.form = new FormGroup({
+                  source: new FormArray([
+                            new FormControl(false),
+                            new FormControl(false),
+                            new FormControl(false)
+                        ]),
+                    });
+
+
+            // Template (HTML)
+
+            <form [formGroup]="form">
+
+                <fieldset  formArrayName="source">
+                    <legend>How did you find us?</legend>
+                    <div class="control">
+                    <input 
+                        formControlName="0"
+                        type="checkbox"
+                        id="google"
+                        name="acquisition"
+                        value="google"
+                    />
+                    <label for="google">Google</label>
+                    </div>
+
+                    <div class="control">
+                    <input
+                        type="checkbox"
+                        id="friend"
+                        name="acquisition"
+                        value="friend"
+                        formControlName="1"
+                    />
+                    <label for="friend">Referred by friend</label>
+                    </div>
+
+                    <div class="control">
+                    <input
+                        type="checkbox"
+                        id="other"
+                        name="acquisition"
+                        value="other"
+                        formControlName="2"
+                    />
+                    <label for="other">Other</label>
+                    </div>
+                </fieldset>
+
+            </form>
+
+
+        --> Explanation
+
+        --- In above code we have created an FormArray.
+        --- Though we could even generate it more dynamically, but for basic understanding purpose we have keep it simple.
+        --- Also we can make the formArray in the template more dynamically where content will get iterate based on array and the formControlName will get assigned on the basis of index of the loop.
+        --- IN template side you need to use "formArrayName" directive to connect your formArray define in Typescript code with a Template code.
+        --- That's how you can sync both the code.
+        --- Also If you could see for the formControls inside array holds the "formControlName" as "0" ,"1" ....
+        --- Because As mentioned above here in FormArray we do not add unique name.
+        --- FormArray is a dynamic which can be expand or shrink base on the user need , so indexes are consider as the "formControlName" i.e identifier in this case.
+        --- After this if you logged the form into the console, you will see the "controls" and "value" object is updated as per the structure that we have created during form creation.
+        --- I have provided one link , which you can use to practice formArray in more detail , like how to create formArray for "Array of Objects list."
+
+
+
+    // Creating Multi-Input Validators / Form group Validators
+
+    --- Adding multi-input validator is very easy and it is straight forward.
+    --- Sometimes, you need to validate a form where you need consider multiple input during its validation.
+    --- In real world, either it is "password" or "confirm Password" field validation, where we can validate password should be match with confirm password.
+    --- Another example, would the date range, where you need to select a date which is less than a specific date.
+    --- To add such validator we can make the use of "formGroup" .
+    --- If you could see "formGroup" is also a "control" which holds a multiple controls inside init.
+    --- In above sections, we learned how can we pass the "configurations" to a "formControl".
+    --- In similar manner, we can pass the configuration object to a FormGroup class as well.
+    --- Let's see how it works.
+
+        --> Code snippet
+
+
+            function equalValues (control: AbstractControl) {
+                // const password = control.controls.password;
+                // Will not work . "Compile time ERROR ==> "Property 'controls' does not exist on type 'AbstractControl<any, any>'.""
+                const password = control.get('password')?.value;
+                const  = control.get('')?.value;
+
+                if(password === ) {
+                    return null;
+                }
+
+                return { passwordNotEqual: true };
+            }
+
+             public signupForm = new FormGroup({
+                email: new FormControl('', {
+                    validators: [Validators.required, Validators.email],
+                    }),
+                    
+                    passwords: new FormGroup({
+                        password: new FormControl('', {
+                            validators: [Validators.required, Validators.minLength(6)],
+                        }),
+                        confirmPassword: new FormControl('', {
+                            validators: [Validators.required, Validators.minLength(6)],
+                        }),
+                        },
+                    {
+                        validators: [equalValues] 
+                        // Adding configuration for the "passwords" "formGroup"
+                    }
+                )
+            })
+
+            // Template code
+
+            
+            <div class="control-row" formGroupName="passwords">
+              <!-- <div class="control-row" [formGroup]="signupForm.controls.passwords"> -->
+            // Now styling classes like " "ng-pristine, ng-touched, ng-untouched, ng-dirty, ng-valid, ng-invalid "" will be apply on this div which is having "formGroupName" directive or "formGroup"
+                
+            <div class="control">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    formControlName="password"
+                />
+                </div>
+
+                <div class="control">
+                <label for="confirm-password">Confirm Password</label>
+                <input
+                    id="confirm-password"
+                    type="password"
+                    name="confirm-password"
+                    formControlName=""
+                />
+                </div>
+            </div>
+            
+
+            // Styles
+
+                [formgroupname].ng-invalid.ng-touched.ng-dirty label,
+                    .control:has(.ng-invalid.ng-touched.ng-dirty) label {
+                    color: #f98b75;
+                }
+
+                [formgroupname].ng-invalid.ng-touched.ng-dirty input,
+                    input.ng-invalid.ng-touched.ng-dirty {
+                    background-color: #fbdcd6;
+                    border-color: #f84e2c;
+                }
+
+            // Compiled Code (DOM structure)
+
+            <div 
+                _ngcontent-ng-c567899870="" 
+                formgroupname="passwords" 
+                class="control-row ng-pristine ng-invalid ng-touched" 
+                ng-reflect-name="passwords"
+                >
+                // "ng" validation Classes are now added to formGroupName directive. 
+                <div _ngcontent-ng-c567899870="" class="control">
+                    <label _ngcontent-ng-c567899870="" for="password">Password</label>
+                    <input 
+                    _ngcontent-ng-c567899870="" 
+                    id="password" 
+                    type="password" 
+                    name="password" 
+                    formcontrolname="password" 
+                    ng-reflect-name="password" 
+                    class="ng-pristine ng-invalid ng-touched"
+                    />
+                </div>
+                
+                <div _ngcontent-ng-c567899870="" class="control">
+                    <label _ngcontent-ng-c567899870="" for="confirm-password">Confirm Password</label>
+                    <input 
+                    _ngcontent-ng-c567899870="" 
+                    id="confirm-password" 
+                    type="password" 
+                    name="confirm-password" 
+                    formcontrolname="" 
+                    ng-reflect-name="" 
+                    class="ng-pristine ng-invalid ng-touched"
+                    />
+                </div>
+                </div>
+
+            
+
+
+        --> Explanation
+
+            --- In above code snippet we are validating "passwords" formGroup.
+            --- Where, we are validating "password" and "". They both must be match with each other.
+            --- If not then "passwords" formGroup will be consider as Invalid.
+            
+            --> Explanation about validator.
+            --- Here, we are creating a validator function same as we did created for other formControls.
+            --- Now , you might be wondered why are we expecting "control as AbstractControl" as a argument to the validator function.
+            --- Remember, FormGroup is also a control which hold control or controls in it.
+            --- Hence we are using "AbstractControl" as type of a our validator function.
+            --- Next thing, how can we find the "password" and "" in it.
+            --- Now you can say we can access using below code, because in above line I mentioned that "formGroup" is also a control.
+                
+                // const password = control.controls.password;
+                // Will not work . "Compile time ERROR ==> "Property 'controls' does not exist on type 'AbstractControl<any, any>'."""
+            --- This code will not work , because Typescript is does not the exact type of AbstractControl.
+            --- Because here it is considering as a Regular control, it does not now we are passing a control(formGroup) which hold nested controls in it.
+            --- That's why Typescript is yield at us that it cannot be able to find the "controls" property inside "control".
+
+            --- Now at this point we know that we are passing a "formGroup", which holds a nested controls.
+            --- Here, Thankfully, the control objects provides a "get"method.
+            --- The "get" method basically takes  name of the control, then check its hierarchy and return the details based upon it.
+            --- It Simplifies access to deeply nested. Retrieve deeply nested controls in complex forms.
+
+                const password = control.get('password')?.value;
+                --- Here , typescript added "?", because if provided control name does not exists it returns a null.
+
+
+            --- After this we have specified this validator functions into validators array of our "password", formGroup configuration.
+
+
+            --- Now, we have to consider one more thing in this case.
+            --- By doing all this we are making our formGroup as Invalid.
+            --- So Angular will add classes like "ng-pristine, ng-touched, ng-untouched, ng-dirty, ng-valid, ng-invalid " on a element where we have added "formGroupName" directive.
+            --- Yes you heard it right, in our cases these validation classes will get apply on "passwords", "NOT ON 'password' and '' formControl element "
+            --- Therefore, we also need to added the styling css rule accordingly.
+            --- In above code , we have updated the styling according to this change.
+
+    
+    --> Converting our validator function into Factory function.
+
+    --- We have also converted our validator function into Factory function, where we an set some argument.
+    --- This function returns an another function.
+    --- Basically these Factory functions which returns another function.
+    --- In below  code, we have basically passing the control names, so that we can compare any controls from our form and validate them if their values are match or not.
+
+        // Code snippet
+
+             function equalValues(control1: string, control2: string) {
+                return (control: AbstractControl) => {
+                const value1 = control.get(control1)?.value;
+                const value2 = control.get(control2)?.value;
+
+                if(value1 == value2) {
+                return null;
+                }
+                return {valueNotEqual: true};
+                }
+            }
+
+        --> usage
+
+             public signupForm = new FormGroup({
+                email: new FormControl('', {
+                validators: [Validators.required, Validators.email],
+                }),
+                passwords: new FormGroup({
+                password: new FormControl('', {
+                    validators: [Validators.required, Validators.minLength(6)],
+                }),
+                confirmPassword: new FormControl('', {
+                    validators: [Validators.required, Validators.minLength(6)],
+                }),
+                },{
+                    validators: [equalValues('password', 'confirmPassword')]
+                    // Usage of our factory , where we are sending configuration.
+
+                }),
+                )}
+        
+
+    // Module Summary
+
+    --- In this section, we learned a lot about the forms.
+    --- We did understand about Template driven Form and Reactive Forms.
+    --- How to handle their validation, states , validators, styling and much more.
+    --- However there are some more advance concepts that we need to work on.
+    --- Please find the below list of these concepts.
+        1) Dynamic Forms
+        2) Validation Directive
+        3) Build our input HTML Elements
+        4) Derive forms dynamically from some data.
+        5) How could create a Form Object based on some data.
+
+    --> Reference
+        https://angular.dev/guide/forms/dynamic-forms
+    
 
 
 
