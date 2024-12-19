@@ -8198,11 +8198,2767 @@ i) Constructor
     
 
 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+******** Deep Dive - Routing *************************************************************************************************** 
+
+--- In this section, we are learning about Angular Routing.
+--- Basically How can you configure the routes, Navigation between different routes, Nested Routes, Preloading/Resolving data before Navigating, Guards/Controlling Access.
+
+
+// What is Routing ?
+
+--- In earlier sections, we learned about Angular's Single Page mechanism.
+--- Basically Angular is having only one html file i.e index html , which loads the different components from Application based upon the interaction.
+--- In real world, web application you often see that there are different url's gets load in the browser's address bar based upon the interaction in the Application.
+--- Despite having Single Page i.e Single HTML file, Angular is used to build rich web application.
+--- Angular provides routing which  "feel like it Angular APP consist of multiple Pages".
+--- When you load your Angular app in browser and afterwords user start interacting with different parts then ANgular gives the "illusion" , 
+    --- that user is navigating through different pages.
+--- Because of the "Routing" .
+--- Basically routing changes the "URL" from browser and loads the different pages when user is interacting with Website.
+--- Behind the scene Angular changes the url and loads the specific  component in the place of another , which basically gives the feel like interacting with Multiple pages.
+--- And that's what the term routing means. It simply means that you wanna update the UI as the user navigates through your webpage.
+--- You typically also wanna update the browser address bar so that links to different parts of your website can be shared.
+
+--- Angular watches and manipulates the URL and renders different components for different URLs.
+--> Important : Its all happening in the browser (Client side) ! There is no server side routing involved.
+
+    //Example
+    
+    /user ==> UserComponent
+    /shop ==> ShopComponent 
 
 
 
 
-*/
+// Enabling Routing
+
+--- To enable the route into our Angular application we need to provide "provideRouter()" function in main.ts.
+--- By providing this function will enable the routing into angular application.
+--- This function accepts the an configuration of routes.
+
+    --> Code snippet
+
+            import { bootstrapApplication } from '@angular/platform-browser';
+
+            import { AppComponent } from './app/app.component';
+            import { provideRouter } from '@angular/router';
+            import { TasksComponent } from './app/tasks/tasks.component';
+
+            bootstrapApplication(AppComponent, {
+                providers: [ provideRouter(
+                    [
+                        {
+                            path: 'tasks',
+                            component: TasksComponent
+                        }
+                    ]
+                )]
+            }).catch((err) => console.error(err));
+
+    --- You need to setup a configuration in above manner to enable the routing into an Angular Application.
+    --- This setup is needed for "StandAlone" component application.
+    --- If you are using Module base components then you can add this function into the "providers" array of the root module(Not in main.ts).
+    --- This configuration accepts the details about the routes.
+    --- It contains the "path", which is nothing but regular path on which you want load something.
+    --- component ==> The component will get loaded when specified "path" is active into the browser's address bar.
+    --> Note ==> You don't need to add "/" in front of the path, Angular automatically append to root path of your application.
+
+    --- This is the basic setup and that helps to enable the routing into your Application.
+    --- Going onwards when we start adding multiple routes, we will create a dedicated typescript file which will hold the route configuration for our application.
+
+
+    --- We have created a separate file to holds the routes for our Angular application .
+
+        --> Code snippet
+
+        // Created separate Routes Configuration
+
+        import { Routes } from "@angular/router";
+        import { TasksComponent } from "./tasks/tasks.component";
+
+        export const appRoutes: Routes = [
+            {
+                path: 'tasks',
+                component: TasksComponent
+            }
+        ];
+
+        // Created Separate APP config
+
+        import { ApplicationConfig } from "@angular/core";
+        import { provideRouter } from "@angular/router";
+        import { appRoutes } from "./app.routes";
+
+        export const appConfig: ApplicationConfig = 
+            {
+                providers: [ provideRouter(
+                    appRoutes
+                )]
+            }
+
+        // Final main.ts
+
+        import { bootstrapApplication } from '@angular/platform-browser';
+        import { AppComponent } from './app/app.component';
+        import { appConfig } from './app/app.config';
+
+        bootstrapApplication(AppComponent, appConfig).catch((err) => console.error(err));
+
+
+
+    --- Route configuration hold the  route object of  a type "Routes".
+    --- "Routes" is type which is available in "@angular/router".
+    --- After doing this separation of configuration, our final code will look like above code.
+    --- WE added separation of concerns for Routes Config , along with "AppConfig", so our main.ts looks more clean and lean.
+
+
+    // Rendering component
+
+    --- In previous section we register our routes.
+    --- Now , we have to load the respective component when we enter the specific path in the address bar.
+    --- So far when we load the path nothing will render on to the screen.
+    --- Because as of now we just register the routes but have not tell the Angular to load them.
+    --- For that we need to tell Angular about the place where we need to render them.
+    --- Angular it self automatically will not be able to figure out  the place where it  want to render the component which is associated with the path.
+
+    --- For that we need to specify some marker or placeholder . That marker will help ANgular to load the components when their associated routes are being loaded in the browser.
+    
+    --> "RouterOutlet"
+    --- "RouterOutlet" is a directive that help us to tell the Angular where we need to load the component.
+    --- Now when we place the <router-outlet/> in a template , Angular identifies it as a placeholder for loading component for the associated route.
+    --- Then ANgular load the "component next or below to the "<router-outlet/>"" automatically.
+    --- Let's see in action how it works and how code looks like into the browser (DOM)
+
+    --- Here in our code "AppComponent" is a main component for our app.
+    --- So we are adding "router-outlet" directive into the template of AppComponent.
+    --- However before using it we first need to updated the "imports" array of AppComponent by Importing "RouterOutlet" from "import { RouterOutlet } from '@angular/router';"
+
+        // Code snippet
+
+        --> AppComponent
+
+            import { Component } from '@angular/core';
+            import { HeaderComponent } from './header/header.component';
+            import { UsersComponent } from './users/users.component';
+            import { RouterOutlet } from '@angular/router';
+
+            @Component({
+            selector: 'app-root',
+            standalone: true,
+            template: `
+    
+                <app-header />
+
+                    <main>
+                        <app-users />
+
+                        <div>
+                            <router-outlet></router-outlet>
+                            // Using "router-outlet" here as a placeholder.
+                            // When specific route is loaded into browser then its associated component will get add right after "router-outlet"
+                        </div>
+                    
+                    </main>
+
+            
+            `,
+            styleUrl: './app.component.css',
+            imports: [HeaderComponent, UsersComponent, RouterOutlet],
+            })
+            export class AppComponent {}
+
+
+        --> Compiled DOM CODE
+
+        --- Here we will see how the component is get added below the router-outlet when specific path is loaded into the browser.
+
+            <div _ngcontent-ng-c1476278778="">
+                <router-outlet _ngcontent-ng-c1476278778=""></router-outlet>
+                
+                // Task component is loaded right below the "router-outlet"
+                <app-tasks _nghost-ng-c1067701060="">
+                    <ul _ngcontent-ng-c1067701060="">
+                    <!-- container -->
+                    <p _ngcontent-ng-c1067701060="">
+                        There are no tasks yet. Start adding some!
+                    </p>
+                    <!-- container -->
+                    </ul>
+                </app-tasks>
+                
+                <!-- container -->
+                </div>
+
+
+// Default Route
+
+    --- Now, we are adding a default rout for our Application.
+    --- Meaning if no path is there then which component that we can load as part of "'' route".
+    --- Basically there is no specific route followed to domain url so in that case it is considered as '' route.
+
+        --> Code snippet 
+
+            import { Routes } from "@angular/router";
+            import { TasksComponent } from "./tasks/tasks.component";
+            import { NoTaskComponent } from "./tasks/no-task/no-task.component";
+
+            export const appRoutes: Routes = [
+                {
+                    path: '',                   // <your domain> (For example ==> http://localhost:4200)
+                    component: NoTaskComponent
+                    
+                },
+                {
+                    path: 'tasks',              //  <your domain>/tasks (For example ==> http://localhost:4200/tasks)
+                    component: TasksComponent
+                }
+            ]
+
+        --- WE have added a component for our default path.
+        --- SO whenever our path is empty then the respective component will rendered into the UI.
+        
+        --> Note
+        --- Parsing of routes are happen from "TOP to BOTTOM".
+        --- In case you have a same path and two different component are configured for them then the first one or one who appears first in the configuration get's rendered.
+        --- Like in our example, if I specify "tasks" with "NoTaskComponent" at first position and for same path I have added "TasksComponent" in the second position.\
+        --- SO when "/tasks" will load into the browser the "NoTaskComponent" will get rendered .
+        --- Therefore when you have same routes you need to ensure the order of them.
+        
+        --- If you have different routes then you can configure in your way.
+
+
+// Adding  links & Make the links clickable
+
+    --- Now, we have register the route and and now its associated components are loading.
+    --- AS of now, we are loading the "routes" manually by changing the url or path in address bar.
+    --- Obviously in real world that is not the case.
+    --- You should navigate to links or path by clicking on some buttons or links within Angular app.
+
+    --- Now let's see how can we add these route to a elements and how to make them clickable.
+
+    --- Here , you might be thinking of adding these link "<a> anchor tag", because that is the tag we have been using in HTML.
+    --- However we could use that anchor tag to load the path but not's recommended way and we must not use it when are loading different paths in Angular application.
+    --- The reason  behind is that "anchor tag basically reload your application when you click to the specific link".
+    --- Clicking on it triggers a full-page reload, as the browser treats it as a standard HTTP request. 
+    --- This behavior defeats the purpose of a single-page application (SPA), which is designed to load content dynamically without refreshing the page.
+    --- SPAs like Angular are optimized to dynamically load only the required components. 
+    --- When you use an <a> tag improperly, the browser reloads the entire application, which can lead to:
+            --> Increased loading time.
+            --> Unnecessary server requests.
+
+    --> "routerLink" directive.
+    --- Instead of using <a href>, always use [routerLink] for internal navigation in an Angular app.
+    --- "routerLink" is directive provided by a Angular.
+    --- However it is not started with "ng".
+    --- We can pass the path or route that we want to load into our Angular APP along with additional configuration if require.
+    --- To make this directive workable, we need to first register it in the "imports" of the component.
+    --- We can import "RouterLink" from "@angular/router" and after importing it into component we can use it else it will not work.
+    
+    --> Goal of "routerLink" directive
+    ---  It allows for seamless navigation between components in a single-page application (SPA) without reloading the page.
+    --- Unlike anchor tag here your screen will not flicker and reload when we click onto the any link or it will not reload app.
+    --- When Angular finds this directive on element on which we are performing navigation click, it blocks the browser's default reload.
+        --- Then it takes control and look at the path that you want to navigate to, and it will then take a look at the route configuration,
+        --- and load and render the appropriate component without leaving that single page application world.
+
+
+    --> Code Snippet
+
+
+                import { Component, computed, input } from '@angular/core';
+                import { type User } from './user.model';
+                import { RouterLink } from '@angular/router';
+
+                @Component({
+                selector: 'app-user',
+                standalone: true,
+                imports: [RouterLink],
+                template: `
+                
+                <div>
+                        <!-- <a href="/tasks"> --> //// NON-IDEAL WAY to load the routes
+                            <a routerLink="/tasks"> //// IDEAL WAY TO to load the routes
+                            <img [src]="imagePath()" [alt]="user().name" />
+                            <span>{{ user().name }}</span>
+                        </a>
+                </div>
+
+
+                
+                `,
+                styleUrl: './user.component.css',
+                })
+                export class UserComponent {
+                user = input.required<User>();
+
+                imagePath = computed(() => 'users/' + this.user().avatar);
+                }
+
+
+    // Setting Up & Navigating TO Dynamic Routes
+
+    --- AS of now, we have setup some route configuration into our application.
+    --- While working with real time projects there are requirements where we need to render some dynamic routes.
+    --- Dynamic routes meaning the route should be change base on upon the data.
+    --- Dynamic routes in Angular allow you to define route paths that accept parameters, enabling navigation based on dynamic values like IDs, usernames, or other data.
+    --- These parameters can then be used to fetch or display relevant data.
+    --- 
+
+    --> Code snippet
+
+            // Routes configuration
+            import { Routes } from "@angular/router";
+            import { NoTaskComponent } from "./tasks/no-task/no-task.component";
+            import { UserTasksComponent } from "./users/user-tasks/user-tasks.component";
+
+            export const appRoutes: Routes = [
+                {
+                    path: '',                   // <your domain>
+                    component: NoTaskComponent
+                    
+                },
+                {
+                    // Dynamic routes 
+                    // ":" ==> Segment starts with ":", Angular recognize this part as a dynamic segment.
+                    // ":" represents,  placeholder for dynamic value.
+                    path: 'users/:userId',              //  <your domain>/users/2
+                    component: UserTasksComponent       // http://localhost:4200/users/u2
+                }
+
+
+                // Or Sometimes you can also setup the dynamic path as below.
+                // If you want to directly load the dynamic content relative to base URL.
+                {
+                        path: ':userId',                //  <your domain>/2
+                        component: UserTasksComponent   // http://localhost:4200/7
+
+                }
+
+
+                // You could have multiple dynamic path segments for single route.
+
+                   {
+                        path: 'users/:userId/:taskId',          //  <your domain>/2/3
+                        component: UserTasksComponent           // http://localhost:4200/7/8
+
+                
+                }
+
+
+            ]
+
+            // Component's TS and HTML
+
+                // Typescript code
+
+                import { Component, computed, input } from '@angular/core';
+
+                import { type User } from './user.model';
+                import { RouterLink, RouterLinkActive } from '@angular/router';
+
+                @Component({
+                selector: 'app-user',
+                standalone: true,
+                imports: [RouterLink, RouterLinkActive],
+                templateUrl: './user.component.html',
+                styleUrl: './user.component.css',
+                })
+                export class UserComponent {
+                user = input.required<User>();
+
+                imagePath = computed(() => 'users/' + this.user().avatar);
+                }
+
+                // Template code 
+                
+                <div>
+                        <!-- <a href="/tasks"> -->
+                            <a [routerLink]="'/users/' + user().id" routerLinkActive="selected">
+                            // "Using "routerLink" directive as Property binding where we can pass the dynamic "segments""
+                            // "routerLinkActive" is a directive which is use to add styling for currently active route.
+                            <img [src]="imagePath()" [alt]="user().name" />
+                            <span>{{ user().name }}</span>
+                        </a>
+                </div>
+
+
+    --> Explanation
+
+    --- In above code snippet, we have updated routes configuration for Dynamic Routes.
+    --- If you could see, above routes configuration we have updated dynamic routes using ":".
+    --- ":" represent dynamic segment.
+    --- Angular recognize ":" as a dynamic path. Hence it add dynamic values in this segments.
+    --- As mentioned in previous section we use "routerLink" directive.
+    --- In our example "userId", will be the dynamic path segment..
+    --- So that's the idea behind the dynamic path segment.
+    
+    --> NOTE (About the identifier we are using in Dynamic Segment.)
+    --- The identifier that we put after ":" is upto us.
+    --- WE can use any name as we want.
+    --- Here we are using "userId" as a identifier for our dynamic segment.
+    --- We have to remember this identifier , because this can be use to extract the dynamic value from the loaded route.
+    --- For example, in our case, we will need to extract the "userId" value which is being loaded in the url .
+    --- Where we can use this "identifier" name to get the value of it.
+
+    --- That's how we can setup the dynamic route configuration.
+
+    --> Load the Dynamic routes.
+
+    --- In above section, we learned that we need to use "routerLink" directive to navigate to the different routes into Angular.
+    --- However, in previous section, we did use this directive as "attribute" binding , because we do not have the typescript expression to use it as Property binding.
+    --- Now, we need to use "routerLink" directive as a property binding.
+    --- Because, now we are introducing a Typescript expression, where we will need to pass the  "Dynamic segment" value dynamically.
+    --- Let's see how can we use it to pass the dynamic segments.
+
+        1) Property binding with Concatenating route path (NOT Angular way Recommendation)
+        --- Here in we are using the string concatenation to build path .
+        --- Below path will look like ==> "http://localhost:4200/users/04".
+        --- Here we are adding "/" after "users" segment so that it can get append directly with userId.
+        --- Since we are manually concatenating we need to add these "/" carefully , so that we can construct the correct path.
+
+              <a [routerLink]="'/users/' + user().id" routerLinkActive="selected">
+
+
+        2)  Property Binding with Array format route path config (Recommended ==> Angular way )
+        --- Angular allows us to construct this router link by passing an "Array" as a value for the routerLink directive instead of passing as a string.
+        --- This array "Excepts a different Path segments in a sequence which are require to build your link."
+        --- Here in below code snippet the first segment contains "/users" which is hardcoded segment path.
+        --- Second segment is our dynamic segment i.e userId.
+        --> If you could notice we are not adding "/" "after " "/users".
+        --- Because Angular will automatically add the "/", while constructing these different segment that we have pass in the array.
+        --- "Behind the scene Angular concatenate these different segments by adding  "/" between them."
+
+                  <a [routerLink]="['/users', user().id]" routerLinkActive="selected">
+
+    --- That's how you can build and use the dynamic routes for the navigation within a Angular APP.
+
+
+// Styling Active link
+
+    --- The routerLinkActive directive in Angular is used to add or toggle a CSS class on an element when its associated route becomes active. 
+    --- It provides a way to visually indicate which link is active in a navigation bar or menu.
+
+
+        --> Code snippet
+
+         <a [routerLink]="['/users', user().id]" routerLinkActive="selected">
+
+
+        --> Explanation
+
+        --- This directive applies the CSS class selected to the anchor tag when the route matches the constructed route (e.g., /users/42).
+        --- Basically when we have list of users and I have selected a user with "42" as a userId.
+        --- Then as per the configuration we did above , the route will navigate to  "http://localhost:4200/users/42"
+        --- After that the current selected user's link is active , because that is now loaded in address bar.
+        --- Therefore Angular will detect the current active link and apply the styling to based on that.
+
+
+    
+// Extracting Dynamic Router Parameters Via Inputs & Observables
+
+    --- Now til this time, we have setup the routes with dynamic segments.
+    --- Now we have to extract these dynamic segments value in the component for which route is being loaded.
+    --- For example,
+            {
+                path: 'users/:userId',              //  <your domain>/users/2
+                component: UserTasksComponent
+            }
+
+    --- Here, when our "UserTasks" component is loading for our specified route we need to extract the dynamic route parameter from the URL.
+    --- To achieve this there are couple of ways.
+    --- WE will go on each approach one by one.
+
+    --> Approaches to extract the dynamic route params from URL.
+    
+    1) Using "input" or "@Input" base approach.
+
+    --- Here we can use the "input" signal or "@Input" decorator to extract the route param value from URL.
+    --- In this approach we need to use the "same variable into a component which is being used in route config as "Identifier"".
+    --- It is the easiest way of getting hold of such a path parameter value in a component that's loaded for a dynamic route is to add an input to that component that has the same name as your dynamic path parameter.
+
+
+        // Code snippet
+
+        --> Routes config
+
+            {
+                path: 'users/:userId',              //  <your domain>/users/2 
+                component: UserTasksComponent
+            } //// "userId" is the name of an identifier which will eventually used to extract the dynamic values from this route.
+
+        --> "UserTasksComponent", Component which will be loaded for the specified route.
+        
+        import { Component, computed, inject, input } from '@angular/core';
+        import { UsersService } from '../users.service';
+
+        @Component({
+            selector: 'app-user-tasks',
+            standalone: true,
+            templateUrl: './user-tasks.component.html',
+            styleUrl: './user-tasks.component.css',
+        })
+        export class UserTasksComponent {
+            private userService = inject(UsersService);
+            userId = input.required<string>();
+            // "userId" will always be a type of string , because the URL is always a string type so the encoded values are also a part of that long string.
+            userName = computed(() => this.userService.users.find((eachUser) => eachUser.id === this.userId())?.name);
+        }
+
+        --> Main.ts configuration i.e "AppCOnfig"
+
+        import { ApplicationConfig } from "@angular/core";
+        import { provideRouter, withComponentInputBinding } from "@angular/router";
+        import { appRoutes } from "./app.routes";
+
+        export const appConfig: ApplicationConfig = 
+            {
+                providers: [ provideRouter(
+                    appRoutes,
+                    withComponentInputBinding() ////  "withComponentInputBinding" by invoking it Angular set's configuration object for routing so that we can use "input" based approach to extract values from loaded route.
+                )]
+            }
+
+
+        --> Explanation.
+
+        --- In this case we are using "input" function i.e signal based approach to extract the dynamic value from the loaded route.
+        --- Along with that we are using the same name of an Dynamic segment as a variable that  we defined during route configuration.
+        --- To make this end to end workable we have updated the "provideRouter" configuration in a app config (APP CONFIG ==> PASS TO MAIN.ts).
+        --- By invoking this function, Angular will pass configuration object to "provideRouter" so that we can use this input base approach for extracting dynamic values.
+
+            --> Reference  ("withComponentInputBinding")
+            https://angular.dev/api/router/withComponentInputBinding?tab=usage-notes
+
+        --- Ensure to invoke "withComponentInputBinding" in "provideRouter" function, because without this your input biding based approach will not  work.
+        --- Also if your variable name does not match with identifier which has set in the route config as dynamic segment then Angular will keep the value as  "undefined" and will break your app.
+
+
+
+        // Using "@Input" Decorator
+
+        --- In this "Input" base approach for extracting values from a link , we have checked how the signal base approach works.
+        --- Now we will achieve the same using a @Input Decorator approach.
+
+            --> Code snippet
+
+                import { Component, inject, Input } from '@angular/core';
+                import { UsersService } from '../users.service';
+
+                @Component({
+                selector: 'app-user-tasks',
+                standalone: true,
+                templateUrl: './user-tasks.component.html',
+                styleUrl: './user-tasks.component.css',
+                })
+                export class UserTasksComponent {
+                
+                private userService = inject(UsersService);
+                @Input({required: true}) userId!: string;
+
+                get userName() {
+                    return  this.userService.users.find((eachUser) => eachUser.id === this.userId)?.name
+                    }
+                }
+
+        --> Explanation
+
+        --- Here in this Decorator based approach we have simply use the @Input Decorator and  a "getter" function.
+        --- So that whenever the userId changes i.e Input changes the getter function will rerun and execute.
+        --- That's the only difference we have to make while using Decorator base approach.
+        --- Rest configuration of "withComponentInputBinding" will remain as it is in the app config.
+
+
+
+    2) Using Observables based approach to Extract the dynamic route parameters.
+
+    --- So far we learned about the input based approach using signal and decorator for extracting dynamic router parameters.
+    --- However this approaches is only available in latest Angular version.
+    --- In older projects and in many other projects this  "Observable" approach is being used.
+    --- Let's understand the code and see how it works.
+
+
+        --> Code Snippet
+
+            import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+            import { UsersService } from '../users.service';
+            import { ActivatedRoute } from '@angular/router';
+
+            @Component({
+            selector: 'app-user-tasks',
+            standalone: true,
+            templateUrl: './user-tasks.component.html',
+            styleUrl: './user-tasks.component.css',
+            })
+            export class UserTasksComponent implements OnInit {
+            private userService = inject(UsersService);
+            private activatedRoute = inject(ActivatedRoute);
+            private destroyRef = inject(DestroyRef);
+            userName = '';
+
+            ngOnInit(): void {
+                console.log('ActivatedRoute', this.activatedRoute);
+                const subscription = this.activatedRoute.paramMap.subscribe({
+                    next: (paramMap) => {
+                        this.userName = this.userService.users.find((eachUser)=> eachUser.id === paramMap.get('userId'))?.name || '';
+                        // 'paramMap.get('userId'' ==> 'userId' refers to the identifier name that we have setup during the routes configuration.
+                }
+                });
+
+                this.destroyRef.onDestroy(()=> {
+                    if(subscription) {
+                        subscription.unsubscribe();
+                }
+                })
+            }
+
+        --> Explanation
+
+        --- TO extract the dynamic route params from a link, first we need to inject a special service from "@angular/router".
+        --- This service is called as "ActivatedRoute".
+        --- The ActivatedRoute service in Angular provides access to information about the route associated with a component that is currently rendered. 
+        --- It is essential for retrieving route parameters, query parameters, URL segments, and more.
+        --- It contains the various details like
+                Route Parameters (e.g., /users/:id → id),
+                Query Parameters (e.g., /users?id=123 → id),
+                URL Segments (parts of the URL),
+                Route Data (static or resolved data configured in the route),
+                Child Routes (nested routes)
+        --- Along with these details it holds a "pointer or a reference to a class" of the "component which has been loaded for that route".
+        --- It also consist of bunch of "Subjects/Behavior Subjects".
+        
+        --> "paramMap"
+        --- There is one property that we are using in above code snippet and that property is derived from these Subjects .
+        --- This property is "paramMap".
+        --- This property is derived from subject, so we need to subscribe it to get the hold of "next" event when it emits.
+        --- The next event after the subscription emits the "key value" pair of the dynamic segments or route parameters.
+        --- Basically it is map contains the key value pair combination, where "key ==> name of an identifier that we have defined in "router configuration""
+        --- WHere value is "value ==> the encoded value in the URL associated with that dynamic segment or route parameter."
+        --- This "paramMap" would be an observable in the end , which will get notified whenever the "value of dynamic segment / route parameter has changed".
+
+        --- That's how using "paramMap" you can get hold of route parameter value.
+        --- You can also take this to the next level using RXJS operators and use them using pipeline i.e "pipe"
+
+        --> Important Note
+        
+            // Here you might wondered whey are we using "Subscription" ?
+        --- In above part, WE have seen that "ActivatedRoute" holds the "pointer or reference to Component class for which current route is loaded".
+        --- In our case, "we are changing the id dynamically from other components in router and based on that updated id we are showing the details in current component ".
+        --- Basically we are changing the URL by updating dynamic parameters and immediately reacting with updated url using "paramMap" observable . 
+        --- So that we can update the data and UI,  based on updated URL or Route path.
+       
+        --> To be very clear
+        --- Angular uses this pointer or reference of the component class for which current route has been loaded.
+                ---  Whenever we changes the params.
+        --- Means the component is only created at the first and therefore "ngOnInit" will also execute only for first time.
+            --- You can see that behavior by logging  "ActivatedRoute" in console.
+            --- Where you will the "ActivatedRoute" has log only at 1st time. Then afterwards i.e after changing params it is not being executed.
+        ---  Therefore component will not executed when we often change the route params for that respective configure route.
+        --- Hence we need a  "subscription" when there is a change in "route param".
+        --- Basically we are not changing the whole url, we are just changing the "parameters".
+        --- Therefore it would not make sense to create a component on every route param change.
+        --- Hence Angular provides a subscriptions, so that we can get notified and listen the params changes for currently loaded route in its associated component.
+        --- That's how Angular reuse the component reference .
+
+        // Open question OR need to verify
+
+        --- Could we use  "afterNextRender" instead of "ngOnInit"?
+        --- Also check for "snapshot" of "paramMap"
+        
+
+// Nested Routes
+
+    --- Nested routes in Angular allow you to define routes within routes. 
+    --- They are helpful for creating hierarchical views, where a parent route contains child routes, and each child route can display its own component.
+    --- This nested routes are consider as "Child routes".
+    --- Child routes are allow us to work with nested router outlets.
+    --- Child routes is a special Angular feature to load the component into another component that was loaded because of another routes.
+    --- Let's see how child routes work in a Action.
+
+        --> Code Snippet
+
+            // Routes Config
+
+                    import { Routes } from '@angular/router';
+                    import { NoTaskComponent } from './tasks/no-task/no-task.component';
+                    import { UserTasksComponent } from './users/user-tasks/user-tasks.component';
+                    import { TasksComponent } from './tasks/tasks.component';
+                    import { NewTaskComponent } from './tasks/new-task/new-task.component';
+
+                    export const appRoutes: Routes = [
+                        {
+                            path: '', // <your domain>
+                            component: NoTaskComponent,
+                        },
+                        {
+                            path: 'users/:userId', //  <your domain>/users/2
+                            component: UserTasksComponent,
+                            children: [ //// Nested Routes ==> Child routes 
+                            {
+                                path: 'tasks',                                       //// ==>  http://localhost:4200/users/u1/tasks
+                                component: TasksComponent,
+                            },
+                            {
+                                path: 'tasks/new',                                  //// ==>  http://localhost:4200/users/u1/tasks/new
+                                component: NewTaskComponent,
+                            },
+                            ],
+                        },
+                    ];
+
+            // UserTasks Component ==> Which will holds the router outlet for its children routes.
+
+                    import { Component, computed, DestroyRef, inject, Input, input, OnInit } from '@angular/core';
+                    import { UsersService } from '../users.service';
+                    import { ActivatedRoute, RouterOutlet } from '@angular/router';
+
+                    @Component({
+                        selector: 'app-user-tasks',
+                        standalone: true,
+                        imports: [RouterOutlet],
+                        templateUrl: './user-tasks.component.html',
+                        styleUrl: './user-tasks.component.css',
+                    })
+                    export class UserTasksComponent implements OnInit {
+                    private userService = inject(UsersService);
+                    private activatedRoute = inject(ActivatedRoute);
+                    private destroyRef = inject(DestroyRef);
+                    userName = '';
+
+                    ngOnInit(): void {
+                        console.log('ActivatedRoute', this.activatedRoute);
+                        const subscription = this.activatedRoute.paramMap.subscribe({
+                            next: (paramMap) => {
+                                this.userName = this.userService.users.find((eachUser)=> eachUser.id === paramMap.get('userId'))?.name || '';
+                            }
+                        });
+
+                        this.destroyRef.onDestroy(()=> {
+                            if(subscription) {
+                                subscription.unsubscribe();
+                            }
+                        })
+                    }
+
+            // HTML TEMPLATE of UserTasks component (Placing "router-outlet")
+
+                    <section id="tasks">
+                        <header>
+                            <!-- <h2>{{userName()}} Tasks</h2> -->
+                            <h2>{{userName}} Tasks</h2>
+                            <menu>
+                            <a>Add Task</a>
+                            </menu>
+                    </header>
+
+                    <!-- <p>Todo ...</p> -->
+                        <router-outlet></router-outlet>
+                    </section>
+
+
+        --> Explanation
+
+            // Nested route registration
+        --- In this code snippet, previously we already did the dynamic route parameters mapping.
+        --- Now, we are adding nested or child path to "user/:userId" path.
+        --- Here, basically we want the different tasks for the selected user and also want to show NEW TASK screen .
+        --- Hence we have added two child routes.
+        --- "children" property from a routes (Routers interface) help us to register the nested routes for a route.
+        --- The important things is that these child routes are automatically concatenated to their parent path.
+                http://localhost:4200/users/u1/tasks
+                --> Here "tasks" is a path of child route. It is appended directly to it's parent path.
+
+        --- By doing this we have registered out Nested Routes.
+
+            // Where to load nested routes.
+        --- AS we learned that we need a "route-outlet" directive to load the routes that we configure.
+        --- Because without adding this directive , Angular will not be able to decide where to load these routes.
+        --- As of now we have "router-outlet" to our root component i.e app component.
+        --- Because the previous routes that we registered those were relative to base path.
+        --- Now we have nested routes.
+        --- It is very straightforward, we always need to use/add "router-outlet" directive in a component which holds nested route configuration.
+        --- As per our code "UserTasksComponent" component will be holding nested routes.
+        --- Hence we have put "route-outlet" in "UserTasksComponent"'s template.
+        --- SO when we  load this routes in to the URL then Angular will load their associated component next or below to the "router-outlet".
+        --- Also  do not forget to import "RouterOutlet" in the imports array of respective component.
+
+// Relative link (routerLink directive)
+
+--- In previous  section, we have updated our routes and child routes.
+--- Now, to make the child routes workable we need to make the our child route links active or clickable.
+--- While doing this, we have to consider a "Relative path".
+--- Angular allow you to setup the relative links.
+--- This relative link is relative to currently activated route.
+--- Let's understand this by an example.
+
+    --> Scenario
+    --- Now assume that we have loaded below route .
+        http://localhost:4200/users/u1
+        --- Now we have to navigate to http://localhost:4200/users/u1/tasks/new
+        --- Basically, we need to move to the "tasks/new" route.
+        --- So for navigating to this route which contains path "tasks/new", we will need to Append the existing route.
+        --- Now here the Relative path comes into the picture.
+    
+    --> Code snippet
+                <menu>
+                <a routerLink="tasks/new">Add Task</a>
+                // We are just simply appending existing route
+                </menu>
+
+    --> Explanation'
+    --- Here you are wondering why we only specified the only route name where we want to navigate.
+    --- WHile using "routerLink" directive, By default Angular consider the path relative to the url which is currently being loaded.
+    --- So when you have the "http://localhost:4200/users/u1" is loaded and the specified "tasks/new" is already part of this configuration then
+        --- ANgular will make this url relative to the existing url which is being loaded in the address bar.
+    --- Due to this feature , we do not need to construct the URL again.
+
+// Accessing Parent Route Data for "Nested Routes"
+
+--- In above section, we learned how to to access or extract the dynamic parameters for the activated route.
+--- Activated route ==> The route which is currently loaded in address bar and the component is rendered for the same.
+--- Along with it , we learned two approaches to extract the values from the loaded route.
+    1) Input Based approach
+    2) Observable based approach.
+
+--- Since, we started building nested routes, we also need to "extract param details in this nested routes".
+--- Basically we need to extract the details which is encoded when parent route is loaded.
+--- These extracting of details needs to be happen in the child/routes component.
+--- Now, you will say we can use above two approaches for the same.
+--- Yes, we can use Observable approach directly for extracting values for the currently loaded route.
+--- However the "Input based Approach will not work for extracting values of parent route in the child/nested route components".
+--- TO make the input base approach work for child/nested routes you must need to update some configuration for router.
+--- Basically you need to tell the Angular that you want extract the route params for child/nested routes when the parent's route load.
+
+    --> Code Snippet
+
+        // Main.ts Updated Config for "Router"
+
+        export const appConfig: ApplicationConfig = 
+            {
+                providers: [ provideRouter(
+                    appRoutes,
+                    withComponentInputBinding(),
+                    withRouterConfig({
+                        paramsInheritanceStrategy: 'always'  //// This setting will ensure that dynamic parameter path values are injected into child routes.
+                    })
+                )]
+            }
+
+        // Routes Config
+
+            export const appRoutes: Routes = [
+            {
+                path: '', // <your domain>
+                component: NoTaskComponent,
+            },
+            {
+                path: 'users/:userId', //  <your domain>/users/2
+                component: UserTasksComponent,
+                children: [
+                {
+                    path: 'tasks',
+                    component: TasksComponent, //// Tries to extracting "userId" via Input based approach when this component gets loaded in UI.
+                },
+                {
+                    path: 'tasks/new',
+                    component: NewTaskComponent,
+                },
+                ],
+            },
+            ];
+
+        // Component Code
+
+            export class TasksComponent {
+            private taskService = inject(TasksService);
+            userId = input.required<string>();
+            userTasks = computed(()=> {
+                return this.taskService.allTasks().filter((eachTask)=> eachTask.userId === this.userId())
+            });
+            }
+
+    --> Explanation
+
+    --- In above code, basically we are trying to extract  "userId" which is encoded in the URL when "users/:userId" path loaded in Address bar.
+    --- Now , we can easily use Input and  Observable base approach in "UserTasksComponent", that is component associated  with  "users/:userId".
+    --- Here, we are trying to access the value of encoded " "users/:userId"" in the "TasksComponent", component which is child/nested of "users/:userId route".
+    --- By default "Child routes do not receive those path parameters as Input."
+    --- Hence at the first time  the input signal i.e userId that we have setup in TasksComponent can not work.
+    --- However , the "Observable" approach still work in child/nested routes as well.
+
+    --- IN input binding approach, by default it only take the "parameters which are associated with it's path.".
+    --- Basically the parameters which belongs to its route path.
+    --- In our case "TasksComponent" does not have "userId" belongs to it's path.
+    --- If as a child route you want to get the path parameters, of a parent route, you explicitly have to tell Angular by doing the configuration where we have provided "route".
+
+    --- For this configuration, we need "withRouterConfig()" function.
+    --- WE can pass and invoke this function  to our "provideRouter" function.
+    --- "withRouterConfig" accepts a configuration object.
+    --- This configuration object have couple advance settings that you can do at your application.
+    --- So now, we have setup "paramsInheritanceStrategy: 'always'" so  that dynamic parameter path values are injected into child routes.
+    
+    
+    --> Reference (More about RouterConfig Options)
+        https://angular.dev/api/router/RouterConfigOptions
+
+    --- That's how by adding this extra configuration, we can extract the dynamic parameter path from the parent path into the child/nested path.
+
+
+    // Link Shortcuts and Programmatic Navigation
+
+    --- As of now we learned about a lot about the navigation.
+    --- In this section, we will be learning about how to use "relativePath" in "routerLink" directive and as well how to navigate programmatically.
+
+
+    --> Using "Relative path" or "special router link syntax" for navigation.
+
+    --- Sometime, instead of specifying the path we can also tell the routerLink directive to navigate back to previous segment in the currently loaded url.
+    --- This can be achievable by specifying "../" ==> It denotes go up to one level in your route path.
+    --- It will essentially remove the last segment.
+
+        // Code snippet
+
+          <a routerLink="../">Cancel</a>
+
+        // Explanation
+
+        --- In this example, we are telling routerLink directive to go upto the one level  from currently route.
+        --- This will remove the last segment from the url and then it will navigate to that url.
+        --- For example, 
+
+              Currently  loaded Route ==> "http://localhost:4200/users/u1/tasks/new"
+              After Navigating Route ==> "http://localhost:4200/users/u1/tasks"
+
+        --- In this example, we have removed the last segment from the route.
+        --- Ensure that you can pass this "../" in correct way, so Angular will recognize the how many segments it wants to remove and load that route path.
+
+
+    --> Navigate "Programmatically"
+    --- As of now we are using "routeLink" directive to navigate within our app.
+    --- However there might be some situations, where we want to navigate based on  execution of some code in a typescript .
+    --- In that case "routerLink" directive will not be helpful.
+    --- In such was case ,we can use "Router class" to navigate programmatically.
+    --- We can simply inject this "Router" class and leverage the methods present in this class to navigate within and from our application.
+    ---
+
+            // Steps to Programmatically Navigate
+            1) Inject the Router service: 
+            --- Import the Router module and inject it into your component or service.
+
+            2) Call the navigate() or navigateByUrl() method:
+
+            --- navigate() accepts a path as an array or string.
+                --- "navigate() " method also accepts an configuration object as a second parameter where we can setup route config.
+            --- navigateByUrl() accepts a full path as a string.
+
+
+
+
+            // Code Snippet
+
+
+                private router = inject(Router);
+                this.router.navigate(['/users', this.userId(), 'tasks'], {
+                    replaceUrl: true
+                })
+
+                ==> Before Navigating ==> http://localhost:4200/users/u3/tasks/new
+                ==> After Navigating  ==> http://localhost:4200/users/u3/tasks
+
+            // Explanation
+
+            --- This "navigate" method works same as the "routerLink" directive.
+            --- Where we can specify the different segments in the array and it concat these segments together to form a url.
+            --- Along with it , we are specifying some configuration while navigating.
+            
+                " replaceUrl: true"
+                --- When true, navigates while replacing the current state in history.
+                --- When you enable this configuration then user cannot use the "back button" of the browser to go back to this page where they are coming from.
+                --- Basically in our example we are navigating from "http://localhost:4200/users/u3/tasks/new" to "http://localhost:4200/users/u3/tasks".
+                --- When we reach to "http://localhost:4200/users/u3/tasks" route then after we click the back button of thr browser then we cannot go back to "http://localhost:4200/users/u3/tasks/new"
+                --- This can be helpful when we do not want go to the some details page after fulfilling/submitting the information.
+                --- After doing this when we click on the back button of the browser we will navigate back to the some different pages but not to the route url from where we did perform this navigation.
+
+
+            // Reference (For more details)
+            https://angular.dev/api/router/NavigationBehaviorOptions
+            --> Also check for "Relative Path vs Absolute Path"
+
+
+    // WILD card routes
+
+    --- A wildcard route is a special route configuration in Angular used to match undefined or unknown paths. 
+    --- It's commonly used to create a "Page Not Found" or "404" error page.
+    --- 
+
+
+        --> Code Snippet
+
+        const routes: Routes = [
+        { path: '', component: HomeComponent },
+        { path: 'about', component: AboutComponent },
+        { path: '**', component: PageNotFoundComponent }, // Wildcard Route
+        ];
+
+        --> Explanation
+
+        --- If user tries to enter a route which does not match with any existing routes then we will navigate back to "PageNotFound"   component.
+        --- This wild card route must be in the end in the routes configuration.
+        --- We already learned that route configuration works from Top to Bottom.
+        --- Hence if none of routes are match then the last route i.e wild card route will executed by Angular.
+        --- Also it is always "**" two asterisk only.
+
+
+
+    // Redirect and "pathMatch" strategies
+
+
+    --- Sometimes, we need to decide the redirection of some paths.
+    --- For instance, if user open up the some route then we should navigate or redirect them to the another route.
+    --- Angular provide us a flexibility to add the redirection configuration inside our Route config where we specify the routes.
+    --- However while using this redirect config we must have ensure about "pathMatch" strategy.
+    --- With the help "pathMatch" you can control how the router matches the URL.
+
+            redirectTo:
+
+            --- Specifies the path to redirect to when the route is matched.
+            --- Does not render a component.
+
+
+            pathMatch:
+            --- Defines the strategy Angular uses to match the URL:
+            --> full: 
+            --- The URL must match exactly.
+            --> prefix: 
+            --- The URL must start with the specified path.
+
+
+    --- We need to cautious while setting up the path match strategy.
+    --- Because using wrong path match strategy in different place may lead to unexpected result.
+    --- Let's understand the difference between "full" vs "prefix".
+
+    "prefix"
+    --- "prefix" path match strategy is mostly used when you are using "redirection" for a nested routes.
+    --- Matches if the URL starts with the path.
+    --- Can cause unexpected behavior or infinite loops if used incorrectly.
+
+    --> Example
+
+        export const appRoutes: Routes = [
+                {
+                    path: '', // <your domain>
+                    component: NoTaskComponent,
+                },
+                {
+                    path: 'users/:userId', //  <your domain>/users/2
+                    component: UserTasksComponent,
+                    children: [
+                    {
+                        path: '',
+                        redirectTo: 'tasks',
+                        pathMatch: 'prefix'             //// "redirection logic"
+                    },
+                    {
+                        path: 'tasks',
+                        component: TasksComponent,
+                    },
+                    {
+                        path: 'tasks/new',
+                        component: NewTaskComponent,
+                    },
+                    ],
+                },
+            ]
+
+    --> Explanation
+
+    --- In this code snippet, we are adding the redirection logic to a child route of a  "users/:userId" route.
+    --- So basically any URL in the browser "starts"  with a path ("users/:userId" + "''") , then that will redirect to "users/:userId/tasks".
+    --- URL Starts with the combination ("users/:userId" + "''") , "''" because  we have specified a "''" empty for redirection config object.
+
+    --- Now we have added "prefix" for nested routes as a path match strategy.
+    --- However we can also what will happen if we add "prefix" as a redirection strategy for root level route or some direct routes.
+
+    // Incorrect Use of pathMatch: 'prefix'
+
+    --> Code snippet
+
+            const routes: Routes = [
+                { path: '', redirectTo: '/welcome', pathMatch: 'prefix' },
+                { path: 'welcome', component: WelcomeComponent },
+                { path: 'welcome/details', component: DetailsComponent },
+            ];
+
+
+    --> Explanation
+
+    --- In this code snippet," /" redirects to "/welcome".
+    ---" /welcome/details "also redirects to "/welcome", creating unexpected navigation.
+    --- This will gives an error of "Infinite Redirects".
+    --- Because we have "''" empty rout which we specified as a path for redirection.
+    --- Now Angular will check if any route starts "''", and if it finds that then will navigate to that  redirect route.
+    --- "However every route in the browser starts '' , empty  string/space. Therefore this redirection will happen in infinite loop".
+    --- To resolve this issue we can use "FULL".
+    --- Let's see in below example, How can we resolve this issue by using "FULL" and why 'full' will not gives an error.
+
+
+
+    "full"
+    --- In the end of the previous section, we have saw that issue of using "prefix" at the root level.
+    --- Now we will be resolving that issue by using "pathMatch:full" strategy.
+
+    --> Code snippet
+
+            const routes: Routes = [
+                { path: '', redirectTo: '/welcome', pathMatch: 'full' },
+                { path: 'welcome', component: WelcomeComponent },
+                { path: 'welcome/details', component: DetailsComponent },
+            ];
+
+    --> Code explanation
+    --- This code will works fine and the Infinite redirection error that we saw using "prefix" is now gone.
+    --- "full" will check if our URL contains empty path/string  and then only will redirect to the provided path.
+    --- IN full it will check entire path matches with "''" empty string that's why it works.
+    --- Because other paths contains empty string + their route therefore they fail to match the exact redirection path.
+    --- Therefore "full" will work here.
+    --- It ensures the router only redirects when the URL exactly matches the path.
+    --- Prevents accidental infinite loops or conflicts with other routes.
+    --- Works predictably in applications with dynamic and nested routes.
+
+
+    // ActivatedRoute vs Snapshot (ActivatedRouteSnapshot)
+
+    --- Earlier in this routing section, we learned about using of " ActivatedRoute" to extract the routeParams or "paramsMap" for the dynamically loaded route params.
+    --- However there is another object which is present in the ActivatedROute is "snapshot".
+    --- You can also use and inject this "ActivatedRouteSnapshot" separately , but same object is also available in "ActivatedRoute".
+    --- We need to understand the difference between them and when we should we use them.
+
+    --> Important Scenario.
+    --- We already learned that our component executes only once for any route and if any parameters changes we can listen them through observables.
+    --- Because ngOnInit executes only at the time of component creation.
+    
+    --- So if we consistently/reactively want to listen the changes when any parameters changes then we can go with "ActivatedRoute".
+    --- Because it contains the list of subjects where they notifies us when anything changes.
+
+    --- However "Snapshot" or "ActivatedRouteSnapshot" contains the list properties which are same in "ActivatedRoute".
+    --- But the main difference is that it contains values for those properties not a subject/observables.
+    --- Hence you can get the values for any params or other things only at the time of component creation.
+    --- You will not get notified when they changes because these are plain values not a subject .
+
+        --> Activated Route
+        --- Dynamic: Updates with route changes.
+        --- Provides observables for params, data, etc.
+            Use Case
+            --- Use when you need to respond to route changes dynamically.
+        --- Ideal for	Interactive or dynamic routes.
+
+        --> ActivatedRouteSnapshot 
+        --- Represents the state of the route at a specific moment in time.
+            Static: 
+            --- Does not change after the route is initialized. 
+            --- If parameters or data change, the ActivatedRouteSnapshot remains the same unless the route is reloaded.
+        --- Ideal for accessing route information immediately when the component is initialized.
+            Use Case
+            --- Use when you only need the route's initial state.
+        --- Does not provide observables; only contains static values like:
+            params
+            queryParams
+            data
+        --- Ideal for Static routes or one-time access to route data.
+
+
+    // Query Params
+
+    --- As of now we learned a lot about routing.
+    --- WE also learned about routing params and how they works and also how we can extract them.
+    --- Along with Route Params , Angular router also supports query params.
+    --- In this section, we will be learning how to add query params and how extract them.
+
+        --> What are query Params ?
+
+        --- Query parameters in Angular allow you to pass additional information to a route without changing its path. 
+        --- These parameters are appended to the URL after a "?" and are commonly used for filtering, sorting, pagination, or passing lightweight state information between views.
+
+        --> Structure of Query Parameters
+            http://example.com/products?category=electronics&sort=price
+
+            In the above example:
+            --- category=electronics is a query parameter specifying the product category.
+            --- sort=price is another query parameter specifying the sorting order.
+
+        --> How to Use Query Parameters in Angular ?
+
+        1. Adding Query Parameters in Navigation
+        --- To navigate programmatically with query parameters:
+
+                import { Router } from '@angular/router';
+
+                constructor(private router: Router) {}
+
+                navigateWithQueryParams() {
+                    this.router.navigate(['/products'], {
+                    queryParams: { category: 'electronics', sort: 'price' },
+                });
+                }
+
+        
+        2. To use with the routerLink directive:
+        --- For this you need to import "RouterLink" directive in component's import.
+
+            <a [routerLink]="['/products']" [queryParams]="{ category: 'electronics', sort: 'price' }">
+                View Electronics
+            </a>
+
+
+
+    // Extracting values of Query Params
+    --- Now, we learned how add to add query params in a route.
+    --- Here, we will see how can we extract the query params from  a route.
+    --- Similar to route params here, also two ways to extract the values of query params.
+
+        1) Using "withComponentInputBinding()" function.
+        2) Using QueryParams observable
+
+        1) Using "withComponentInputBinding()" function
+        --- As we already know we are invoking this function inside a route config so that we  can use the route params as a input in a component which is rendered for specified route.
+        --- The same function, is use to access a query params inside a component of loaded route using "input" signal function.
+        --- Let's see in action how it works.
+
+        --- In below example, we are loading "http://localhost:4200/users/u4/tasks?order=asc" this url.
+        --- Where in route config we have specified the "TasksComponent" for "/tasks" route config.
+
+        --> Code snippet
+
+            // Component file
+            import { Component, input } from '@angular/core';
+            import { TaskComponent } from './task/task.component';
+            import { RouterLink } from '@angular/router';
+
+            @Component({
+                selector: 'app-tasks',
+                standalone: true,
+                templateUrl: './tasks.component.html',
+                styleUrl: './tasks.component.css',
+                imports: [TaskComponent, RouterLink],
+            })
+             export class TasksComponent {
+    
+                    order = input<'asc' | 'desc'>(); //// Accessing "order" (A query Param) using "input" function. 
+                                                     //// Which can be directly accessible by using the same name which we specified while configuring query params.
+                                                    //// As we learned that "withComponentInputBinding()" helps to access the params from a route as input signal function.
+                }
+
+            // Template file
+
+            <p>
+            <a routerLink="./" [queryParams]="{
+                order: order() === 'asc' ? 'desc' : 'asc'
+            }">Sort {{order() === 'asc' ? 'Descending' : 'Ascending' }}</a>
+            </p>
+        
+
+        2) Using "queryParams" observable
+
+        --- Since we already used  "routerParamsMap" to extract the values of route parameters.
+        --- "queryParams" observable works in the same way, but it can be use to extract query params for loaded route.
+        ---  As we already know that using the observable to extract any params value help to interact with them reactively.
+        --- So if we do not want using "withComponentInputBinding" then we can use this approach to extract the values.
+        --- Let' see in action .
+
+            --> Code snippet 
+
+                // Component code
+
+                import { Component, inject, input, OnInit } from '@angular/core';
+                import { TaskComponent } from './task/task.component';
+                import { ActivatedRoute, RouterLink } from '@angular/router';
+
+                @Component({
+                selector: 'app-tasks',
+                    standalone: true,
+                    templateUrl: './tasks.component.html',
+                    styleUrl: './tasks.component.css',
+                    imports: [TaskComponent, RouterLink],
+                    })
+                export class TasksComponent implements OnInit {
+                private activatedRoute = inject(ActivatedRoute);
+                private taskService = inject(TasksService);
+                order?: 'asc' | 'desc';
+
+                ngOnInit(): void {
+                    // Accessing the queryParams observable to access the 'order' query param.
+                    // Here "order" value will get automatically gets updated when it changes because we are using subscription.
+                    this.activatedRoute.queryParams.subscribe((value) => {
+                        this.order = value['order'];
+                    });
+                    }
+                }
+
+                // Template code
+                <p>
+                <a routerLink="./" [queryParams]="{
+                    order: order === 'asc' ? 'desc' : 'asc'
+                }">Sort {{order === 'asc' ? 'Descending' : 'Ascending' }}</a>
+                </p>
+
+
+    // Accessing "Data" for routes.
+
+    --- In this section, we will be learning about how to set some data for the specified route.
+    --- SO that we can access that data inside a component when it's specified route gets loaded.
+    --- Till this time, we are accessing Route and QueryParams for the loaded route.
+    --- Now, we will set some data statically and dynamically.
+
+    --- Sometimes we need to set and fetch such data in component for the specified route.
+    
+    --> Configuring "data" property inside a route config.
+
+    --- So far, we setup , "path", "component", "redirectTo" and other properties inside our route config.
+    --- However there are couple of more properties that we can setup while doing route configuration.
+    --- The "data" is the property that can setup while doing configuration of a route.
+    --- "data" accepts an object which can hold any keys and values.
+    --- Basically we can define our keys and its values and access them inside our component.
+
+    --- Let's see how we can setup and access data inside a component.
+
+        --> Code snippet
+
+            // Route config
+
+            {
+                path: 'users/:userId', //  <your domain>/users/2
+                component: UserTasksComponent,
+                children: userRoutes,
+                data: {                     //// "data property" , here we are setting up the data 
+                    message: 'Hello !'      //// We are setting up the "message" property for a example.
+                }
+            }
+    
+            // Accessing "data" inside a component.
+
+            --- Like, route params and query params here also we have 2 ways to access the "data" property inside a component.
+
+            1) Using "withComponentInputBinding()"
+
+            --- Since , we already enabled the "withComponentInputBinding()" function, inside our route configuration.
+            --- Therefore, whichever the properties that we are adding inside a data object , which can be added as "input" signal by Angular for the loaded component (Nested as well since we did that configuration as well).
+            
+                --> Code snippet
+
+                  message = input<string>();
+                  console.log(this.message()); ////Output ==> "Hello !"
+            --- Any "data" "key" that is set up inside route config, like "message" in our case, will be provided as an input to the component that's loaded for the route.
+                
+
+            2) Using "data" observable
+
+            --- Here, also like paramsMap, params or queryParams observable, Angular router provides a "data" observable to access data.
+            --- Since "data" object can hold any kind of properties so typescript consider as "any" or "index signature" object.
+            --- Therefore we are usign "square bracket notation to access properties from a object that we setup for the route."
+
+                --> Code snippet
+
+                    const dataSubscription = this.activatedRoute.data.subscribe((routeData) => {
+                        console.log('Route Data', routeData['message']);
+                    });
+
+                    if(dataSubscription) {
+                    this.destroyRef.onDestroy(() => {
+                        dataSubscription.unsubscribe();
+                    })
+                    }
+
+
+
+    // Resolvers
+
+    --- In previous section , we saw that how can we set the "data" statically.
+    --- Now, we will see how to set up data in dynamic way.
+    --- To implement the resolvers in our Angular application , we can use the "resolve" property .
+    --- This "resolve" property is a part of route configuration object.
+    --- It accepts an object, where we can specify the "key" as we want and "value" is the "resolverFn".
+    --- In older versions of Angular, we were using "class based resolvers".
+    --- In latest Angular versions it has change to "function based resolvers".
+    --- Though we can use both approaches in our Applications.
+    --- First we will see how the function based resolver works.
+
+    --- "resolve" is property that we can specify during the route config.
+    
+    --> 1) Function based Resolvers.
+    --- In this approach, we can define the function anywhere inside our application.
+    --- This function is having a type "ResolverFn".
+    --- This type is imported from "@angular/router".
+    --- This helps us the match the exact function signature so that we can specify the correct types.
+
+        // Code snippet
+
+                    import { Component, inject, Input, input } from '@angular/core';
+                    import { UsersService } from '../users.service';
+                    import {
+                    ActivatedRouteSnapshot,
+                    ResolveFn,
+                    RouterLink,
+                    RouterOutlet,
+                    RouterStateSnapshot,
+                    } from '@angular/router';
+
+                    @Component({
+                    selector: 'app-user-tasks',
+                    standalone: true,
+                    imports: [RouterOutlet, RouterLink],
+                    templateUrl: './user-tasks.component.html',
+                    styleUrl: './user-tasks.component.css',
+                    })
+                    export class UserTasksComponent {
+                    userName = input<string>();
+                    // @Input() userName!: string;
+                    }
+
+
+                    // Resolver function 
+                    --- We can keep below resolver function anywhere.
+                    --- AS of now just for a example, we have kept it inside a our component file but outside a class.
+
+                    export const resolveUserName: ResolveFn<string> = (
+                        activatedRouteSnapshot: ActivatedRouteSnapshot,
+                        routerState: RouterStateSnapshot
+                    ) => {
+                    const userService = inject(UsersService);
+                    return (
+                        userService.users.find(
+                        (eachUser) =>
+                            eachUser.id === activatedRouteSnapshot.paramMap.get('userId')
+                        )?.name || ''
+                    );
+                    };
+
+                    // Route Config
+
+                    {
+                        path: 'users/:userId', //  <your domain>/users/2
+                        component: UserTasksComponent,
+                        children: userRoutes,
+                    data: {
+                        message: 'Hello !'
+                    },
+                    resolve: {
+                        userName: resolveUserName          //// Adding resolver function inside a resove object.
+                    }                                      //// We are not calling this function, just specifying it. Angular will call it automcatically behind the scene,
+                },
+
+
+        // Code Explanation
+
+        --- In above code, we have created "resolveUserName" as resolver function.
+        --- It is function which is having type of "ResolveFn".
+
+        --> ResolveFn
+        --- "ResolveFn" is a generic type function which requires some additional information about the type.
+        --- Basically it accepts a type of data that we will be returning from a resolver function.
+        --- Basically type of data that will be resolved by a function.
+        --- Then this function accepts two arguments,
+        --- First is "ActivatedRouteSnapshot" and second "RouterStateSnapShot"
+
+            --> Why "ActivatedRouteSnapshot" ?
+            --- Here, you may wondered why do we need a "ActivatedRouteSnapshot".
+            --- Since it always returns a value and we cannot interact with them when param changes.
+            --- Yes you are right, but here we are using inside a "resolver function".
+            --- Basically "resolverFn" executes whenever the route on which it is provided gets active (Even if it is already active means if any params changes).
+            --- If anything changes in that route navigation the resolver function executes.
+            --- Therefore we can use "ActivatedRouteSnapshot" here.
+            --- So whenever the resolver function is getting executed it will hold the value of updated and latest route params or state from snapshot.
+
+        --> Injection inside a "Resolver function"
+        --- Since in older version we were using  a classes a resolvers so it was easy to inject a dependencies inside it.
+        --- Now here, Angular help us by providing a "inject" function.
+        --- As we already know, this is an alternative way to inject the dependencies.
+        --- So in our above example, we are using "inject" function to inject the service dependencies.
+        --- Here Angular will enusre it will work.
+
+
+        --> Accessing values return/resolved by resolver function.
+        --- Here, also we can use two ways to extract the values which are resolved by resolver.
+        --- 1) withComponentInputBinding 2) Using "data" observable.
+
+        1) withComponentInputBinding
+        --- Since we already using this in above section to use route params and query params as input to the component.
+        --- Here also when we specifies the "key" inside a resolve object.
+        --- Angular then make these keys available as a input via signal or decorator to the components(Nested as well if that config is present) 
+            --- which are configure for that path.
+        --- Behind the scene ANgular automatically executes the resolver function that we have pass as a value inside a resolver object.
+        --- And then make that key available inside a component as input so that we can use it.
+        --- This value is having same type as value that we are returning from resolver function.
+        --- Hence to use this approach we must have to use same variable name as we have specified as key inside a resolve object.
+
+        2) Using Observables.
+        --- Here we can use "ActivatedRoute" as injection.
+        --- It contains a  "data" observable which hold the value of both static data and as well as properties from resolve object.
+        --- Basically Angular merges static data and resolver properties inisde a data observable.
+        --- By subscribing it we can access both values inside a component.
+        --- So when anything changes(Params) for that route the resolver function will get call and eventually it gets available through subscription inside a component.
+
+               this.activatedRoute.data.subscribe({
+                next: (dataValue) => {
+                    console.log(dataValue)
+                    // Logged Output { "message": "Hello !", "userName": "Jasmine Washington" }
+                    // Here "message" is a static data property while "userName" holds dynamic value resolved by resolver.
+                } 
+            })
+
+
+
+    // Class Based Resolvers
+
+    --- As we learned about modern way of creating resolvers using functions.
+    --- However, there are many projects which currently using Class based resolvers.
+    --- So it is important to understand how they works.
+
+        --> Code snippet
+
+            // Resolver class
+
+            @Injectable({ providedIn: 'root' })
+            export class UserNameResolver implements Resolve<string> {
+            
+            constructor(private usersService: UsersService) {}
+            
+            resolve(activatedRoute: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+                const userName =
+                    this.usersService.users.find(
+                        (u) => u.id === activatedRoute.paramMap.get('userId')
+                    )?.name || '';
+                    return userName;
+                }
+            }
+
+            // Route config
+
+            {
+                path: 'users/:userId', // <your-domain>/users/<uid>
+                component: UserTasksComponent,
+                children: userRoutes,
+                
+                data: {
+                    message: 'Hello!',
+                },
+                
+                resolve: {
+                    userName: UserNameResolver,
+                },
+            
+            }
+
+            // Extracting values
+
+            --- WE can use observable base approach to extract the values from resolver when we are using class based approach and if that Angular version does not support "withComponentInputBounding".
+
+    --- Please note that this approach is deprecated though - the modern, function-based one (shown in the previous lecture) is therefore recommended!
+
+
+    // Enabling execution of resolver function for Query Params.
+    
+    --- In above section, we saw that how can implement the resolver and access them via Input binding and data Observable.
+    --- Also component get notifies when any changes happen in route navigation or params.
+    --- However when we make the changes in Query Params or if Query Param changes our resolver function will not execute and we are not able to listen it.
+    --- In this case Angular help us by providing way to setup a configuration.
+    --- By doing this configuration, we can enable the execution of resolver function for QueryParam changes as well.
+    --- Default behavior provided Angular is that resolver functions will be reexecuted when route parameters changes but not when a query parameter changes.
+    --- Therefore we can update this behavior by changing the configuration.
+
+
+        --> Updated route config
+
+          {
+            path: 'tasks',
+            component: TasksComponent,
+            resolve: {
+                userTasks: resolveUserTasks,
+            },
+            runGuardsAndResolvers: "paramsOrQueryParamsChange"
+        },
+
+    --- By adding "runGuardsAndResolvers", you can enable the resolver function execution for query param changes as well.
+    --- Guards and/or resolvers will always run when a route is activated or deactivated. When a route is unchanged, the default behavior is the same as "paramsChange".
+    --- It accepts below values.
+
+        paramsChange : 
+        --- Rerun the guards and resolvers when path or path param changes. This does not include query parameters. This option is the default.
+
+        always : 
+        --- Run on every execution.
+        
+        pathParamsChange : 
+        --- Rerun guards and resolvers when the path params change. This does not compare matrix or query parameters.
+        
+        paramsOrQueryParamsChange : 
+        --- Run when path, matrix, or query parameters change.
+        
+        pathParamsOrQueryParamsChange : 
+        --- Rerun guards and resolvers when the path params change or query params have changed. This does not include matrix parameters.
+
+
+
+
+    // Setting and Resolving "title"
+
+    --- "title" refers to a page title which is shown in tab inside a browser (It is also show as search engine result).
+    --- So whenever you are navigating through different routes you can also change the title dynamically.
+    --- With the help of "resolvers" you can set the different titles based on the different routes.
+    --- "title" property is available inside a route config object (Route Type).
+    --- This "title" property accepts a "Route.title?: string | ResolveFn<string> | Type<Resolve<string>> |"
+
+        --> Code snippet
+
+            // Resolver FN
+            
+            export const resolveUserName: ResolveFn<string> = (
+            activatedRouteSnapshot: ActivatedRouteSnapshot,
+            routerState: RouterStateSnapshot
+            ) => {
+            const userService = inject(UsersService);
+            return (
+                userService.users.find(
+                (eachUser) =>
+                    eachUser.id === activatedRouteSnapshot.paramMap.get('userId')
+                )?.name || ''
+            );
+            };
+
+            // "resolveTitle" function which will return a string, which can be concatenated dynamically based upon selected user.
+            export const resolveTitle: ResolveFn<string> = (activatedRouteSnapshot: ActivatedRouteSnapshot,
+            routerState: RouterStateSnapshot) => { 
+                const userName = resolveUserName(activatedRouteSnapshot, routerState);
+                return `${userName}'s Task`
+            }
+
+            // Routes config
+
+
+              {
+                path: 'users/:userId', //  <your domain>/users/2
+                component: UserTasksComponent,
+                children: userRoutes,
+                data: {
+                    message: 'Hello !'
+                },
+                resolve: {
+                    userName: resolveUserName
+                },
+                title: resolveTitle  //// Passing "resolveTitle" a resolver function which will executed automcatically by Angular and will resolved with Dynamic value.
+            },
+
+        --- By doing this when you change the user then title will set dynmaically based on resolved value return by Resolver.
+
+
+
+
+
+    // Route Guards
+
+
+    --- Route guards is one of the most important feature of Angular routing.
+    --- It helps to validate and check if certain navigation action should be permitted or not.
+    --- In older version, we have been implementing guards using class based approach.
+    --- In latest version, we must use function to build the guards.
+
+    --- There are different types of Guards.
+    --- We will see some of them in this section and you can explore other.
+
+    1) CanMatch
+    --- This is the most versatile guard.
+    --- It allows you to control whether this entire route should be matched by a certain navigation action or not.
+    --- So whether some path that has been entered into the URL should match this route or not.
+
+    2) CanActivate
+    --- CanActivate comes one step after "CanMatch".
+    --- The canActivate route will be checked by Angular once a route has been identified as matching for the currently active path, but before the component here has been loaded.
+    
+    3) CanActivateChild
+    --- The canActivateChild guard is a type of route guard used to prevent or allow the navigation to child routes of a specific route.
+    --- It is particularly useful for protecting nested routes in a structured manner.
+
+    --- All these guards accepts an array of functions (classes in older versions).
+    --- These configurations that we can setup inside a route config.
+    
+    --> For example (canMatch)
+
+
+            import { CanMatchFn, RedirectCommand, ResolveFn, Route, Router, Routes, UrlSegment } from '@angular/router';
+            import { NoTaskComponent } from './tasks/no-task/no-task.component';
+            import { resolveTitle, resolveUserName, UserTasksComponent } from './users/user-tasks/user-tasks.component';
+            import { NotFoundComponent } from './not-found/not-found.component';
+            import { userRoutes } from './users/users.routes';
+            import { inject } from '@angular/core';
+
+            // dummy canMatch function will check . 
+            const dummyCanMatch: CanMatchFn = (route: Route, segments: UrlSegment[]) => {
+                const router = inject(Router);
+                const shouldGetAccess = Math.random();
+                if(shouldGetAccess < 0.5) {
+                //return of(true); You can also return an Observable.
+                    return true;
+                }
+                // "parseURL" method accepts a string path and that will converted to URLTree and then cause the redirect navigation for specified path.
+                return new RedirectCommand(router.parseUrl('/unauthorized'));
+            } 
+
+
+            export const appRoutes: Routes = [
+            {
+                path: '', // <your domain>
+                component: NoTaskComponent,
+
+            },
+            {
+                path: 'users/:userId', //  <your domain>/users/2
+                component: UserTasksComponent,
+                children: userRoutes,
+                canMatch: [dummyCanMatch],  //// Passing "dummyCanMatch" function to canMatch guard. We are only passing this function , Angular will automatically executes it.
+                data: {
+                message: 'Hello !'
+                },
+                resolve: {
+                userName: resolveUserName
+                },
+                title: resolveTitle
+            },
+            {
+                path: '**',
+                component: NotFoundComponent,
+            },
+            ];
+
+        --> Code explanation
+
+        --- In above code we have created "dummyCanMatch" a guard function.
+        --- This function accepts "CanMatchFn" as type.
+        --- By passing this "CanMatchFn" type will adhers to follow the correct function signature.
+        
+            // CanMatchFn
+
+            --- It accepts two parameters.
+            --- First is the "route", which hold the information about the route which you want to match or trying to load.
+            --- Second argument is array of parameters / segments. Which is in the end an array of URL path segments.
+            --- Return type of this function is "boolean | UrlTree | RedirectCommand;"
+            --- You can also return a Observable of Boolean.
+            --- Now if our condition does not satisfies we can return false.
+            --- In that case access denies but your app will break.
+            --- Because if URL does not match then Angular will not be able load any component.
+            --- So user can see the empty broken page.
+            --- Instead of returning false , we are using "RedirectCommand" class.
+    
+            // Redirect Command.
+            --- It can help Angular to navigate to the different page.
+            --- We need to simply instantiate this class and pass the URLTree that describe the destination of the redirect.
+
+            // "inject" method.
+            --- Like resolver function you can also inject the dependencies using "inject" function.
+            --- You can also work with observables inside this function.
+
+            // canMatch
+            --- We can pass the "dummyCanMatch" as guard function to a array.
+            --- Just like resolver it will also executed by Angular.
+            --- WE can also pass multiple canMatch route guard function.
+
+
+   // Class Based Guards
+    
+    --- In previous section, we saw the function based guards.
+    --- However the function based guards are available in Latest Angular versions.
+    --- In older Angular versions, we are using Class Based Guards.
+    --- Please find the below code snippet to understand how class based guards works.
+
+
+         --> Code snippet
+         
+            // Class Based Guards
+            @Injectable({ providedIn: 'root' })
+            
+            // here using "CanMatch" interface to implement the class , so that typescript will force to add "canMatch" method inside in it.
+            class CanMatchTeamSection implements CanMatch {
+            
+            constructor(private router: Router) {}
+            
+            canMatch(route: Route, segments: UrlSegment[]) {
+               const shouldGetAccess = Math.random();
+               if (shouldGetAccess < 0.5) {
+                  return true;
+               }
+               
+               return new RedirectCommand(this.router.parseUrl('/unauthorized'));
+               
+               }
+            }
+
+            // Route config
+
+            {
+            path: 'users/:userId', // <your-domain>/users/<uid>
+            component: UserTasksComponent,
+            children: userRoutes,
+            canMatch: [CanMatchTeamSection],
+            data: {
+               message: 'Hello!',
+            },
+            resolve: {
+               userName: resolveUserName,
+            },
+            title: resolveTitle,
+            },
+
+
+    // CanDeactivate Guard
+
+    --- The "CanActivateGuard" is use to decide whether the user is allowed to leave the page or not.
+    --- This guard is helpful when user accedentally clicks to on something which might result the another navigation while filling out the some details.
+        --- In that case this guard will restrict use from navigating to another route.
+    --- Let's see in action how it works.
+
+
+        --> Code snippet
+
+            // canDeactivate function guard
+
+                export const canLeaveEditPage: CanDeactivateFn<NewTaskComponent> = (component) => {
+                if (component.submitted) {
+                    return true;
+                }
+                if (
+                    component.enteredTitle() ||
+                    component.enteredSummary() ||
+                    component.enteredDate()
+                ) {
+                    return window.confirm('Do you really want to leave ? You will lose the entered data.');
+                }
+
+                return true;
+                };
+
+            // Route COnfig
+
+
+               {
+                path: 'tasks/new',
+                component: NewTaskComponent,
+                canDeactivate: [canLeaveEditPage]
+            },
+
+            // Type definition of CanDeactivateFn
+
+            type CanDeactivateFn<T> = (
+                component: T,
+                currentRoute: ActivatedRouteSnapshot,
+                currentState: RouterStateSnapshot,
+                nextState: RouterStateSnapshot,
+                ) =>
+
+
+        --> Explanation
+
+        --- In above code snippet we have created "canDeactivate" fn , which will be responsible for restricting user from Navigating a specified component.
+        --- To implement this function we need  "CanDeactivateFn" type, so that we adhers to exact signature of an function.
+
+            // CanDeactivateFn
+        --- "CanDeactivateFn" is generic function which accepts a argunment and that argument has been consider as first parameter of function.
+            --- Basically we are passing "NewTaskComponent" class as additional information to generic type.
+            --- Hence the instance of "NewTaskComponent" will get available inside this function and we can access that instance using first argument of a function.
+        --- This "canLeaveEditPage" guard function will executed by Angular when we are leaving  "NewTaskComponent".
+            --- Basically the component that we specify as additional information to "CanDeactivateFn<NewTaskComponent>"
+        --- It also "current"route which hold the information about the current route.
+        --- Then it also provides the "currentState" i.e current router state.
+        --- Then the "nextState", it is state of router if the navigation your trying to trigger would be completed.
+
+
+    --- That's how we can use the "CanDeactivate" guard to ensure that unintended page changes are prevented before they are even initialize.
+
+        // Important
+        --- Practice for Creating "CanDeactivate" class base guard.
+
+
+
+
+    // Realoading Pages with Angular Router & Configuring Programmatic Navigation.
+
+    --- In this section, we will see how can we reload the route even if params and query params are not changed.
+    --- Sometimes, we find the situation where we need to execute resolver functions so that they can re-compute the fetch implementation for a route.
+    --- In previous section we have setup the configuration for one of route as "runGuardsAndResolvers : 'paramsOrQueryParamsChange'".
+    --- However in a reloading of the same route this configuration is not enough because neither params are changed nor query params.
+    --- So the resolvers associated with this route will never reexecute.
+
+    --- Before re-executing the resolver first we will need to reload the same route .
+
+    --> How to reload the same route ?
+
+    --- WE can reload the same route using programmatic navigation.
+    --- We need to inject "Router" service into a component that will gives us "navigate" method.
+    --- Let's see in a action how everything works
+    
+    --> How can we re-execute the resolver for the same route even if params or query params unchanged.
+
+    --- It is very straightforward and we already learned about that configuration.
+    --- Instead  "runGuardsAndResolvers : 'paramsOrQueryParamsChange'"", we need to make it as  "always".
+    --- I.e runGuardsAndResolvers : 'always'".
+
+
+    --> Code snippet
+
+
+        // Route Navigation
+
+        export class TaskComponent {
+        task = input.required<Task>();
+        private router = inject(Router);
+        private activatedRoute = inject(ActivatedRoute);
+        private tasksService = inject(TasksService);
+
+        onComplete() {
+                this.tasksService.removeTask(this.task().id);
+                    // Navigation Prgrammatically with Reload configuration
+                    this.router.navigate(['./'], {
+                    relativeTo: this.activatedRoute,
+                    onSameUrlNavigation: 'reload',
+                    queryParamsHandling: 'preserve'
+                })
+            }
+        }
+
+        // Route config
+
+
+          {
+            path: 'tasks',
+            component: TasksComponent,
+            resolve: {
+                userTasks: resolveUserTasks,
+            },
+            runGuardsAndResolvers: "always"
+        }
+
+
+    --> Code explanaton
+    
+    --- As mentioned, we are navigating programmatically on the same route.
+
+            // Use of "relativeTo"
+            --- To load the same route we have added "relative" path.
+            --- Since we are using relative path so we need to tell the Angular which path it should consider as relative one.
+            --- Meaning the "path" that we are specifying i.e "./" that has to be relative to some route path.
+            --- BY default Angular consider relative to default path i.e "''".
+            --- Hence we are passing "relativeTo" to the currently Active path.
+            --- Therefore Angular will navigate to currently Activated route.
+
+            // "onSameUrlNavigation"
+    
+            --- By default the "onSameUrlNavigation" points to "ignore".
+            --- Meaning the navigation will never happen and  Angular will not reload the current route.
+            --- Hence the current route will never becomes Active.
+            --- To perform the reload on the same navigation we need to setup the "onSameUrlNavigation" to "reload".
+            --- By doing this Angular will consider this navigation same as we are coming from a different route.
+
+            // "runGuardsAndResolvers"
+
+            --- WE need to change the value of "runGuardsAndResolvers" to "always".
+            --- So whenever the route being active it will re-execute the resolvers.
+
+            // "queryParamsHandling"
+            --- In our case, since we are reloading the current route.
+            --- However there some query parameters which are already loaded in the route path.
+            --- While performing this navigation we will lost those query params because Angular consider this as a fresh navigation even we are reloading the same path.
+            --- In such situation, we need to keep our query params which are already loaded as part of url.
+            --- The queryParamsHandling property in Angular's Router controls how query parameters are handled during navigation.
+            --- It is particularly useful when you want to preserve, merge, or overwrite query parameters during route changes.
+
+            'merge'	
+            --- Merges new query parameters with the existing ones.
+
+            'preserve'	
+            --- Preserves the existing query parameters (does not add new ones).
+            --- It preserves the existing query parameters while navigating to a new route.
+            --- Useful when you want to retain the query parameters across navigation.
+
+            default	
+            --- The default behavior where existing query parameters are replaced entirely.
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+******** ******************************** Code Splitting (Lazy Loading) and Deferrable Views *********************************************************************
+
+--- So far we learned a lot about different features in Angular.
+--- But to deliver a great experience , we must have to consider the performance of an Application.
+--- When it comes to performance "Lazy loading" plays an important role.
+--- Along with it Angular 17 has started to support "Deferrable Views".
+--- In this section, we will be learning about both of these features.
+
+// Lazy Loading
+
+    --> What is lazy loading ?
+    
+    --- Lazy loading is a design pattern in Angular that loads feature modules on demand instead of loading them all at once during the initial application load. 
+    --- This improves performance and reduces the initial bundle size, leading to faster app startup.
+    --- So some parts of the application code are only loaded when they're needed.
+    --- That's the idea behind lazy loading and adding it to your application and implementing it correctly can therefore reap those benefits and can therefore lead to a better user experience.
+    
+--- We can achieve  the lazy loading into Angular application in two main ways
+1) Route base Lazy Loading
+2) Deferrable views
+
+--- These are not alternative to each other .
+--- WE can use them in a application to lazy load the code in different manner.
+--- Let's see in a action
+
+    // Route base lazy loading .
+
+    --- Feature Components/Modules are loaded dynamically when the associated route is activated.
+    --- We can setup this configuration into route config.
+    --- The properties inside route config which starts with 'load' are use to achieve the route base lazy loading.
+    --- WE can load the components (If using standalone components) and modules on demant when associated route is activated.
+    --- Apart from that we can aslo load the group children lazily.
+        --- Meaning if any route contains nested routes then we can load all these nested routes or child routes lazily when it's parent route is activated.
+    --- There are certain rules we need to follow while implementing lazy loading.
+    --- Let's see in a action
+
+
+    --> Important tip
+
+    --- WE should avoid the lazy loading of the routes to default or home page routes.
+    --- Because these homepages are needs to be rendered at first place.
+    --- Therefore they have to be the part of initial bundle.
+    --- If we configure them as lazy loaded routes then Angular will not include them as part of initial bundle.
+    --- And when that path loaded in the url , Angular will send another request to load them . (Request to server for downloading those bundle in the browser so they can be loaded.)
+    --- Which again slows downs the initial load of our Application.
+
+    --> How "import" statement works ?
+    --- Before applying the lazy loading , every component loads eagerly.
+    --- This is happen because of a "import" statement.
+    --- The "import" statement refers to component imports.
+    --- Basically while configuring the routes we import the component so that we can pass them to "component" property for a route.
+    --- When we use below import statment then that component gets loaded egerly.
+        "import { resolveUserTasks, TasksComponent } from "../tasks/tasks.component";"
+    
+    --- You will be wondering then how can we import the component .
+    --- There is special "import" function, which can be use to load the component/module lazily.
+
+        // import() function
+
+    --- In Angular, the import() function is used to implement lazy loading for modules/component dynamically. 
+    --- It works in conjunction with the loadChildren/loadComponent property in the route configuration.
+    --- Angular uses import() to achieve lazy loading by splitting the application into multiple chunks that are loaded as required.
+    --- It accepts the path of the component/module that we want to load.
+    --- It returns a promise that resolves to the module being imported.
+    --- Used to dynamically import code and load it on demand.
+
+    --> Code snippet
+
+            // Route config
+
+            const resolveUserTasks = () => {
+                ...
+            }
+
+            export const userRoutes: Routes =  [
+                {
+                path: '',
+                redirectTo: 'tasks',
+                pathMatch: 'prefix'
+                },
+                {
+                path: 'tasks',
+                // component: TasksComponent,
+                resolve: {
+                    userTasks: resolveUserTasks,
+                },
+                loadComponent: () => import('../tasks/tasks.component').then((m) => m.TasksComponent),
+                // "loadComponent" is responsible for loading the route lazily.
+                runGuardsAndResolvers: "always"
+            },
+
+
+            // Code explanation
+
+            --- In above code snippet, we are loading "TaskComponent" lazily.
+            --- As mentioned above, we have to ensure that we should not use "import" statement to import any thing which is part of "TaskComponent" file.
+            --- If we do then, Angular will still eagaerly  load that component.
+            --- Because in above code you can see , previous "resolveUserTasks" was part of TaskComponent file.
+            --- Ssomehow we were importing the "resolveUserTasks" from TasksComponent file which was causing the  eagaerly  loading of it.
+            --- Hence for an example purpose we have moved "resolveUserTasks" function into our route config file and remove all the imports related TaskComponent file.
+            --- And that help us achieve the lazy loading of it fully.
+            --- Basically we should keep any import from a component or module that we want to load lazily.
+            --- Also we should removed unused import statment , because even that can cause the lazy loading of the component. 
+            --- "loadComponent" accepts a callback function which holds the execution of "import()" function.
+            --- When our "tasks" route is activated then the "loadComponent" callback function is executed by Angular  automatically.
+
+
+        // Lazy Loading entire route groups (Loading routes which consist of child routes)
+
+        --- In above part, we have seen that how can we lazy load the component.
+        --- But, we can also lazy load the entire route group.
+        --- Basically we can lazy load the route group which consist of nested routes i.e child routes.
+        --- The purpose of this to lazily loading of the multiple routes which hold components.
+
+            --> Code snippet
+
+                // Child route Group
+
+                export const userRoutes: Routes =  [
+                    {
+                    path: '',
+                    redirectTo: 'tasks',
+                    pathMatch: 'prefix'
+                    },
+                    {
+                    path: 'tasks',
+                    // component: TasksComponent,
+                    resolve: {
+                        userTasks: resolveUserTasks,
+                    },
+                    loadComponent: () => import('../tasks/tasks.component').then((m) => m.TasksComponent),
+                    runGuardsAndResolvers: "always"
+                    },
+                    {
+                    path: 'tasks/new',
+                    component: NewTaskComponent,
+                    canDeactivate: [canLeaveEditPage]
+                    },
+                ]
+
+                // Main route config (Lazy loading above child route config)
+
+
+                export const appRoutes: Routes = [
+                {
+                    path: '', // <your domain>
+                    component: NoTaskComponent,
+
+                },
+                {
+                    path: 'users/:userId', //  <your domain>/users/2
+                    component: UserTasksComponent,
+                    loadChildren: () => import('./users/users.routes').then(m=> m.userRoutes), //// Loading all the child routes lazily using "loadChildern"
+                    // All the nested child routes will get loaded lazily .
+                    canMatch: [dummyCanMatch],
+                    data: {
+                    message: 'Hello !'
+                    },
+                    resolve: {
+                    userName: resolveUserName
+                    },
+                    title: resolveTitle
+                },
+                {
+                    path: '**',
+                    component: NotFoundComponent,
+                },
+                ];
+
+
+        // Using "Services" lazily for lazy loaded routes
+
+        --- On the top lazy loading routes , Angular provides us to make the services loaded lazily.
+        --- So instead of provided them  "{providerIn: 'root'}", we can specify them as a part of providers array of an Lazy loaded route.
+        --- We can do this configuration inside a route config.
+        --- So instead loading these services at root level we can create their instance when they actually need it i.e When the specific route get's loaded.
+
+        --> Code snippet
+
+            export const userRoutes: Routes =  [
+                {
+                    path: '',
+                    providers: [TasksService],
+                    children: [
+                    {
+                        path: '',
+                        redirectTo: 'tasks',
+                        pathMatch: 'prefix'
+                    },
+                    {
+                        path: 'tasks',
+                        // component: TasksComponent,
+                        resolve: {
+                        userTasks: resolveUserTasks,
+                        },
+                        loadComponent: () => import('../tasks/tasks.component').then((m) => m.TasksComponent),
+                        runGuardsAndResolvers: "always"
+                    },
+                    {
+                        path: 'tasks/new',
+                        component: NewTaskComponent,
+                        canDeactivate: [canLeaveEditPage]
+                    },
+                    ]
+                }
+            ]
+
+
+        --> Code explanation
+
+        --- In above code snippet we are prviding a services a route level.
+        --- That services can be accessible to a route and all the children for that route.
+        --- So we can pass any Dependencies as inside this providers array so that it can be accessible to all the routes which are configure there.
+        --- Since in our example, we are loading userRoutes lazily which result the service that we have provided also gets loaded lazily.
+
+
+
+// Deferrable views
+
+--- As mentioned above there is another way to load the code lazily.
+--- Routing is the one way to load the code on demand.
+--- In Angular 17 and latest versions , Angular team has introduce the "Deferrable Views".
+--- This deferrable view are use load the code inside a template in lazy manner.
+
+    --> What is Deferred loading with @defer
+
+    --- Deferrable views, also known as "@defer" blocks, reduce the initial bundle size of your application by deferring the loading of code that is not strictly necessary for the initial rendering of a page. 
+    --- This often results in a faster initial load and improvement in Core Web Vitals (CWV), primarily Largest Contentful Paint (LCP) and Time to First Byte (TTFB).
+
+    --- Deferrable views works in the different part.
+
+    1) Default view (idle)
+
+    --- Here we can simply pass the @defer with curly braces as a wrapper to a code block that we want to load lazily.
+
+            // code snippet
+
+            @defer {
+                <large-component />
+            }
+
+            // code explanation
+
+            --- This will load the component once the browser enters into the idle state.
+            --- Meaning when it is not performing any heavy task on your website.
+            --- The idle trigger loads the deferred content once the browser has reached an idle state, based on requestIdleCallback. 
+            --- The code for any components, directives, and pipes inside the @defer block is split into a separate JavaScript file and loaded only when necessary, 
+                --- after the rest of the template has been rendered.
+
+
+--- Apart from default view , Deferrable views support a variety of triggers, prefetching options, and sub-blocks for placeholder, loading, and error state management. 
+--- @defer also accepts parentheses , so that we can provide some additional configurations.
+
+
+2) viewport
+
+--- The viewport trigger loads the deferred content when the specified content enters the viewport using the Intersection Observer API. 
+--- Observed content may be @placeholder content or an explicit element reference.
+--- By default, the @defer watches for the placeholder entering the viewport. Placeholders used this way must have a single root element.
+--- If you are not specifying an "argument to viewport" then it must need to specify placeholder else you will get a compile time error.
+    // Error ==>  "NG5002: "viewport" trigger with no parameters can only be placed on an @defer that has a @placeholder block"
+
+    // Code snippet
+
+    1) Without argument viewport i.e with @placeholder
+
+            @defer (on viewport) {
+                <large-cmp />
+                } @placeholder {
+                <div>Large component placeholder</div>
+            }
+
+    --- Alternatively, you can specify a template reference variable in the same template as the @defer block as the element that is watched to enter the viewport. 
+    --- This variable is passed in as a parameter on the viewport trigger.
+
+    2) With argument i.e passing template reference 
+
+    <div #greeting>Hello!</div>
+        @defer (on viewport(greeting)) {
+        <greetings-cmp />
+    }
+
+--- In both of the example, you code which is wrapped inside @defer will not be visible until it comes into a viewport.
+--- I.e it will be loaded lazily but instead of this @defer content the "content inside a placeholder or template reference will be present in the UI".
+    --- However we cannot see it because it will not be part of viewport till that time.
+
+
+3) interaction
+
+--- The interaction trigger loads the deferred content when the user interacts with the specified element through "click or keydown events".
+--- By default, the placeholder acts as the interaction element. Placeholders used this way must have a single root element.
+--- When we interact with the placeholder the placeholder gets replace by defer content.
+
+        @defer (on interaction) {
+            <large-cmp />
+        } @placeholder {
+            <div>Large component placeholder</div>
+        }
+--- Alternatively, you can specify a template reference variable in the same template as the @defer block as the element .
+--- When we interact with that element the defer view will get loaded 
+--- This variable is passed in as a parameter on the viewport trigger.
+
+        <button #greeting>Hello!</button>
+            @defer (on interaction(greeting)) {
+            <greetings-cmp />
+        }
+
+
+--- Apart from these conditions @defer provides some other conditions as well.
+--- You can read about them on a Angular docs.
+4)hover
+--- https://angular.dev/guide/templates/defer#hover
+
+5)Immediate
+--- https://angular.dev/guide/templates/defer#immediate
+
+6)Timer
+--- https://angular.dev/guide/templates/defer#timer
+
+
+// Prefetching Data with "prefetch"
+--- Along with above "on" conditions, we can also enable the prefetching of the content.
+--- Basically we can setup the prefetching to speed up the loading process of that content when it's needed even more.
+--- In addition to specifying a condition that determines when deferred content is shown, you can optionally specify a prefetch trigger. 
+--- This trigger lets you load the JavaScript associated with the @defer block before the deferred content is shown.
+--- You can decide when prefetch of the content should happen.
+--- You can specify any metioned above "on" conditions .
+--- You can specify a prefetch trigger similarly to the block's main trigger, but prefixed with the prefetch keyword.
+--- The block's main trigger and prefetch trigger are separated with a semi-colon character (;).
+
+
+
+    --> Code snippet
+
+    @defer (on interaction; prefetch on hover) {
+        <app-offer-preview />
+        } @placeholder { 
+        <p class="fallback">We might have an offer ...</p>
+    }
+
+    --> Code explanation
+
+    --- In above code , we are prefetching the content.
+    --- Basically view will get rendered when "interaction" (click event or any)happen on placeholder, but data or content will prefetch when "hover" on the placeholder happens.
+
+// "when" condition
+
+--- The when trigger accepts a custom conditional expression and loads the deferred content when the condition becomes truthy.
+
+        @defer (when condition) {
+        <large-cmp />
+        } @placeholder {
+        <div>Large component placeholder</div>
+        }
+--- This is a one-time operation– the @defer block does not revert back to the placeholder if the condition changes to a falsy value after becoming truthy.
+
+
+--- Apart from above thing are plenty of operations are provided by @defer view.
+
+    --> Reference to learn more
+    --- https://angular.dev/guide/templates/defer#prefetching-data-with-prefetch
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+******** Deploying Angular APPS - CSR, SSR & SSG ****************************************************************************************************************
+
+--- Till this time, we have completed building of our application.
+--- Now it's time to deploy this application.
+--- Currently our application is loading on development server , now we need to host it on the server where anyone can access this application.
+
+--- There  are different ways of building our Angular application for Deployement like "CSR", "SSR" & "SSG".
+
+// Deployment
+
+--- Deployement in a Angular APP is multi-step process.
+--- Till this time whatever the code we develope is a part of our local development i.e it is only present on a local server.
+--- Meaning that application is only available on our system.
+--- No one from outside world can access our code and run the application.
+--- To make our code available in the world , we need to deploy our code in to some web host.
+--- But before deployiing the code on the web host first we need to "build" our application.
+
+    --> "build" Angular App.
+    --- As of now we were using "ng serve" or "npm run start" to run our application on local machine.
+    --- This command is only use for running the application.
+    --- It is not suited for to host your production ready application because it is used for development mode.
+    --- The code which is generated by this command is not optimized .
+    --- It is too big in size and it contains some error/logging messages which we do not want to share with outside world.
+    --- So to make our application , we must to have to build our application in small bundle size and which is optimize.
+    --- We can use cli to compile and optimize our code for deployement
+    --- To build angular we need to run "ng build" or "npm run build" (It performs ng build under the hood) command.
+    --- This command use to build our application which supports optimization and compilation.
+    --- Just as development build , it first compiled Typescript code into JS code .
+    --- But it perform more optimization on  this compiled JS code and make that shrink and make it as small as possible.
+    --- Which reduce into Optimize bundle size.
+
+    --- Once this command completes it's execuetion,
+        --- You can see "dist" folder into your repository.
+        --- This "dist" folder contains "project_name" (For example ==> my_app) folder.
+        --- That holds some files and folder that we would deploy.
+        --- For example it contains "browser" folder if you are deploying SPA.
+        --- If your are using SSR then it contains "Server" folder as well.
+        --- The "browser" folder contains some files and folder that you want to exposed on the web host.
+        --- Then Users can request this webhost and can visit your Angular driven websiste.
+    
+    --- In a nutshell, that's how you can "build" your app for deployment.  
+
+--- That's general process for building an Angular app.
+--- However that depends upon which kind of application yor are building using Angular.
+--- There are different types of Application we can build and process will slightly change for deployment.
+--- Let's see  different types of APP and their build process. 
+
+1) CSR (SPA)
+
+---  CSR stands for Client side rendering (Only Client side Application).
+--- Here you are building a Single page Appliation that servers only single html file.
+--- I.e index.html.
+--- This single html file is server to webhost.
+--- Then this file is requested by user and then that file will load all the JS code which is builded for our application.
+--- IN the end , the website visitor can interact with APP using this JS code.
+--- Basically this JS code responsible for rendering our Angular APP UI in the WEB HOST.
+--- That's why it is called Client side only Application.
+--- So all this compiled and optimized application code executes in the browsers of our website visitors, and therefore, we don't need any dynamic web server.
+--- We don't need a web server that would be able to execute code on it.
+--- We don't need to run any Node.js or PHP or any other code on that server.
+--- Instead, we just need a static host that's able to serve the single HTML file and all the other assets, like all the JavaScript files we have, to the website visitors.
+--- Basically for CSR we do not any Dyanmic web server , a static web host suffices to execute app code in the browser.
+
+--- However this approach is having some disadvantages
+
+    --> Disadvantages
+
+    1) Slow initial load: 
+    --- Users must wait for JavaScript to download and execute before seeing any content.
+    2) Poor SEO: 
+    --- Search engines may have difficulty indexing content if it's only rendered on the client side.
+    --- Search engine crawler sees an empty site because it take times for initial load.
+    ---  Search engine crawler are not wait to complete the client side JS code to render all content.
+    --- Therefore they sees intial HTML file pretty empty (Lagging of actual content).
+
+    --> Advantages
+    --- This kind of app is helpful when you do not depend upon SEO.
+    --- Application for internel use.
+    --- Because in the end these internal application requires an Authorization and Authentication.
+
+
+    --> Manual Deployement of CSR APP using Firbase.
+
+    --- Since , we are building CSR which requires a static web host as mentioned above.
+    --- We can use any static host to host our application (Google it for more info).
+    --- Here we are using "Google Firebase" to host our application.
+
+        // Steps for deployment
+
+        1) Search for Google Firebase hosting.
+        2) Logged in with your Google Account.
+        3) Click on the  "Go to Firebase Console".
+        4) Select "Create a Project".
+            4.1 --> Add the name of the project.
+            4.2 --> Accept T&C and disbale Google Analytics.
+        5) Wait for project creation complete.
+        6) Once it completes, select left hand side menu and select the "hosting" option.
+            Then you will navigate to hosting Application steps.
+            This page contains all the information about hosting of a Application
+
+        --- By doing all these steps you will come to Hosting Static Web APP page.
+        --- After this you have to perform below steps on your system.
+
+        // Steps to be performed on the system.
+        1) Install below package on your system globally
+           " npm install -g firebase-tools"
+        2) Then perform below commands
+            2.1" firebase login"
+            2.2 After successfull login perform ==> "firebase init"
+            --- 2.2 Command help you to initialize your local project as Firebase project.
+            --- So you have run this command in to your app's root directory.
+            --- Then you will see couple of options and you have to select "Hosting:" option and hit the spacebar.
+            --- Then you have to select existing project.
+            --- Then select the project name that you have created after successfull logged into Firebase. 
+            --- After doing this CMD will ask you to select the directory for your app.
+                ==> You have to select for example ==> dist/APP_NAME/browser
+                --- It is important to specify the directory path else it will conside the "public" as a default directory.
+            --- After that it will ask "Configure as Single page APP (rewrite all urls to /index.html)".
+                ==> Here you have to select "Y -- YES", because you are deploying the Single PAGE CSR Application.
+                ==> This is the important setting, otherwise your app routes will not work.
+                ==> Because If user sends a request "domain/tasks" and firebase will look inside a "browser" folder.
+                ==> And if "browser"folder does not contains "tasks" subfolder then your request will fail. 
+                --> This setting will ensure that all request no matter which path they have entered.
+                --> Must comes to index.html file and then script inside that file get's loaded .
+                --> Then that script internally handover these routes to Angular router to handle it.
+                
+        --- After following above things the build is completed .
+        --- You will able to see two new files ".firebaserc" & ".firebase.json".
+        --- ".firebase.json" holds the configuration that we have setup.
+
+        --> Now we can deploy our application
+        --- But before starting deployment you have to run "npm run build once again".
+        --- So that you have a updated "dist" folder.
+        --- Also check if there are any white speces are present in ".firebase.json", because that will lead to unexepected result.
+        --- Then after verifying all these details run  "firebase deploy".
+        --- After the successfull deployement you will receive the "dummyy domain url"for your app.
+        --- You can use this link to demo your app.(You can also add your custom domain.)
+        --- You can also configure the details of the deployement for your firebase project.
+
+        // Deployed APP URL ==> https://ng-deployment-example-fe40a.web.app/users/u3/tasks?order=asc 
+
+
+
+    // CLI Deployement
+
+    --- In previous section, we have seen that manual deployement for deploying an Angular APP.
+    --- However Angular CLI also help us for deployement.
+        --> Reference
+        https://angular.dev/tools/cli/deployment 
+
+
+
+2) Server Side Rendering APP
+
+--- In previous section, we have saw that how the CSR works.
+--- We also saw the disadvantages for CSR.
+--- Here in this section, we will be learning about SSR (Server Side Rendering).
+--- That will help to overcome the disadvantages we have in CSR.
+
+    --> What is SSR ?
+    --- This is another way to build the Angular web application.
+    --- You can build the server-side rendered app.
+    --- This is the Angular app where it's routes are actually rendered on-demand on a dynamic web server.
+    --- So instead of just having a single HTML file and letting client-side Angular do everything,
+    --- with a server-side rendered app, when a user wants to visit a certain page, the request is handled on the server first,
+    --- and the page that was requested is pre-rendered on-demand on the server.
+    --- so that the finished page is sent back to the user.
+    --- And that's an important difference.
+
+    --- Instead of getting empty page , single html file and having client side JS do everythig, here user receives finished page with all it's content.
+    --- That being said this page still contains Angular JS code which the takes over and "hydrates"(activated) the page once it has been received by a browser,
+    --- So then it will actually becomes a "Single Page Application,"(After initial Rendering) and it's subsequent actions will be handle by Client Side JavaScript.
+
+    --- Server-Side Rendering involves rendering web pages on the server and sending fully rendered HTML to the client’s browser. 
+    --- This contrasts with traditional client-side rendering, 
+        --- where the browser fetches raw HTML and JavaScript, then constructs the DOM (Document Object Model) and renders the page. 
+        --- SSR offers several benefits, including improved SEO, faster initial page loads, and better support for users with slow internet connections or disabled JavaScript.
+
+    --- To build a server side rendered APP, we need a dynamic web server that will handle the incoming user request.
+    --- A server that's just able to return HTML and JavaScript files is no longer enough then.
+    --- Instead, it must be a server that's able to execute Node.js code specifically because it's that compiled JavaScript code,
+        --- your Angular code compiled to JavaScript, that must be executed on-demand on this server now.
+    --- This will help for initial load and search engine crawlers.
+
+    --> Disadvantages
+    --- For example, if rendering a component takes a bit longer due to some data fetching, for example, then it takes a bit longer until the user gets back a response to their request.
+    --- So they might be seeing a blank page for a couple of milliseconds or seconds.
+    --- In addition, we have increased "complexity" because we now do need such a dynamic web server, and we must set up this application to support server-side rendering.
+
+
+    // Setting UP SSR
+
+    --- Angular CLI help us to setup a SSR.
+    --- There is CLI command which helps to install SSR and configure the same in your APP.
+    --- Command
+        "ng add @angular/ssr"
+    --- Important to note that we are using "add" not "install".
+    --- The add command will install the package into your application and aslo make the necessary configuration changes to support that package.
+    --- Though you can use npm install as well, but then you have to do configuration at your own and that is some extra work.
+
+    --- You can also enable the SSR while creating your Angular Application using "ng new --ssr" command.
+
+    --- After perfomring "ng add @angular/ssr" , below files will get added into your application.
+
+            These commands create and update application code to enable SSR and adds extra files to the project structure.
+
+            my-app
+            |-- server.ts                       # application server
+            └── src
+                |-- app
+                |   └── app.config.server.ts    # server application configuration
+                └── main.server.ts              # main server application bootstrapping
+
+    --- Along with it, the command also update "Angular.json" where it adds the various setting to support server side rendering.
+
+             "scripts": [],
+                "server": "src/main.server.ts",
+                "prerender": true,
+                "ssr": {
+                "entry": "server.ts"
+                }
+
+        --> server.ts
+
+        --- In contains a node js server code .
+        --- This will in the end use to serve your application.
+        --- Now, you could tweak the code in this file if you needed to to support other routes or other settings,
+        --- But by default, this server is set up such that it's ready to dynamically run your Angular code on the server and 
+        --- that it's then also able to return the result of running your Angular code as a page to the website visitor.
+        --- So this server code here takes care of preparing your Angular driven pages on the server and of serving them back to the website users.
+        --- "CommonEngine" is used to render an Angular application.
+
+        --> main.server.ts
+
+        --- This is needed to do the application initialization on the server.
+        --- If the Angular code executes there and an app.config.server.ts file was added as well.
+
+        --> app.config.server.ts
+        --- It configures the application for server side rendering.
+
+    // Building SSR
+
+    --- After performing above command you can now perform npm run build so Angular should add "server" folder inside a dist.
+    --- Now after the successful execution of this build, we have a "server" folder inside a browser/routing.
+    --- When we perform "ng add @angular/ssr", the Angular also configures the "package.json".
+    --- Which result into adding a new command " "serve:ssr:routing": "node dist/routing/server/server.mjs""
+
+    --- The "server" folder contains  code that serves your application.
+    --- WE can run the server side application run locally using "npm run serve:ssr:routing".
+    --> WE can use the same command to run the built application on a web host (After uploading all the files to it.)
+
+    // Pitfalls of SSR
+
+    --- In previous part, we have seen that how can we build the SSR.
+    --- However while building SSR there are some pitfalls that we need to check.
+    --- The current application, where we are performing all this SSR operation contains some code where we are using localstorage.
+    --- The purpose of localstorage is to read the data of users and use that data to display list of user on the page.
+    --- Now if we are using CSR then it will work fine.
+    --- But now we have introduced SSR, when we are dynamically building Angular pages at server side.
+    --- Here at server, it does not have access to "localstorage", because localstorage can only be accessible from client i.e browser.
+    --- Now pur application will break when code reaches to this point.
+    --- Server will not be able find localstorage , so whatever the operations that we are performing on localstorage object will get an error.
+    --- Because localstorage is undefined.
+   
+        --> Why this happens ?
+        --- Basically this happen due to pre-rendering at the server side.
+        --- Angular render the pages at server side as well.
+        --- SO when it tries to pre-render the page at server we are getting this error.
+        --- Because localstorage cannot be access at server side. 
+
+        --> How to handle this error ?
+        --- We can make the use of "afterNextRender" hook to handle such error.
+        --- As we learned that afterNextRender accepts a callback function, and Register callbacks to be invoked the next time the application finishes rendering. 
+        --- Basically it will call the callback function provided to it After Angular runs  next Component render cycle.
+        --- "afterNextRender" does not care about which Component is being rendered next, 
+        --- it simply allows you to register a function that executes some code that will be executed the next time after all Components have been rendered.
+        --- So the next time Angular is done going through all your Components and rendering them, you could say, so the next time it's done rendering that Component tree to the DOM.
+        --- And therefore this also is a function that will only execute on the client-side because of course Angular does also render the Components and prepare some HTML code on the server,
+            --- but theyare only rendered to the DOM on the Client side, because DOM is present at the client side.
+        --- Therfore "afterNextRender" will executed after client side render cycle .
+        --- Hence you can run any code safely inside this function which is dependent upon the browser side feature.
+
+        --> Code snippet
+
+              constructor() {
+                    afterNextRender(()=> {
+                    const tasks = localStorage.getItem('tasks');
+
+                    if (tasks) {
+                        this.tasks.set(JSON.parse(tasks));
+                    }
+                    })
+
+                }
+
+        --- After fixing this issue , you again need to perform "npm run build" , so that Angular update files for server side rendering.
+        --- Then you can run the code using "pm run serve:ssr:routing", which will run your code successfully without any error.
+
+
+
+3) SSG (Static Stite generation)
+
+--- SSG is a sub type of SSR.
+--- Basically It is combination of both CSR and SSR.
+--- SSG provides a prerendering of an pages at build time.
+--- We can also dynamically loads the pages using SSR and also pre-redner some Angular routes at build time.
+--- By doing pre-rendering at built time, when use request for specific route , Angular will send the pre-rendered page instead of dyanamically creating it or server.
+--- That helps pages to serve quicker.
+
+--- However when app loads, "Browser" still receives the finished page.
+--- Meaning either pages are pre-rendered using SSG or on-demand rendering by dynamic server using SSR , they all are hydrated(active) at Client Side
+    --- in the browser and becomes a single page application (SPA) once they received by the browser.
+
+--- When your application is simple and you can have all the pages , those can be pre-rendered then you do not need SSR for dynamic web page rendering.
+--- However, if you have a mixture of pages , where some pages need to be re-rendered and some pages need dynamic rendering then you can keep SSR.
+--- All the pre-render pages will comes under the "browser" folder inside a dist/APP_Name directory.
+
+
+    --> Disadvanatges.
+    --- If your application needs to be fetch the data then that fetching is only happen at Build time.
+    --- So you may end up with outdated data into your website, until the application  is built again and that page is pre-rendered again.
+    --- SO you should avoid pre-rendering for such pages which is depend on updated data.
+
+
+
+    // Setup SSG(Pre-rendering)
+
+    --- You can use the same command that we are using for SSR i.e "ng add @angular/ssr".
+    --- Because in the end Pre-rendering is the sub-form of SSR .
+    ---  Interesting thing is Angular helps you in pre-rendering some pages.
+    --- When you build your Application, Angular identifies some routes and pre-redered them.
+    --- As mentioned above , After installing "ng add @angular/ssr", some of yoru file configuration changes.
+    --- "Angular.json" was one of the file which was updated.
+    --- If you could see , Angular has updated some setting where it sets "prerender: true".
+    --- BY doing this Angular identifies the pages which can be pre-rendered.
+    
+    --- After a build when you debug the index.html file under a browser folder.
+    --- You could see some code has been added inside it.
+    --- This code is nothing but the code from a routes which were identified by an Angular for "pre-rendering".
+    --- For example if you have a route which is having a default path i. home page "path: ''", Angular will consider as pre-rendering.
+    --- Where on the other side if you are having some routes which contains a dynamic segments which can hold a dynamic route params .
+        --- Then Angular cannot consider these routes for pre-rendering, because Angular will never which kind of data will comes in the place of dynamic segments.
+        --- For example ==> "path:'users/:uid/tasks'"
+        --- In this example, Angular will never know in advance which user id's will be part of your application.
+    --- Basically Angular only consider a routes which are not dynamic for pre-rendering.
+    --- You can view the "index.html" inside a "browser" folder to see which is code is pre-rendered.
+
+        --> Setup routes/pages for pre-render
+
+        --- To setup some pages for pre-rendering we can take above example of "path:'users/:uid/tasks'"
+        --- In this example , assume that we know about some user id's in advance.
+        --- Therefore we could construct a path on that basis.
+
+        1) Create a TXT file which can hold the routes that you want to pre-rendered.
+        --- We have created user-routes.txt in our root directory.
+        --- It holds the following routes
+            /users/u1/tasks
+            /users/u2/tasks
+        --- You should add one path per line.
+        --- No comma between them.
+        --- Also ensure these path's are valid path .
+            // Check if path's are not valid (By doing some testing at your own on local.)
+
+        2) Update the configuration of "prerender" inside Angular.JSON
+        --- As of now in Angular.json, the "prerender" is set to "true".
+        --- WE can make it as "object", so that we can setup this configuration in greater details.
+            
+            --> Code snippet
+
+              "prerender": {
+                    "routesFile": "user-routes.txt" //// Provided a path of user-routes txt file. Which is relative to a root project folder.
+                },
+
+
+        3) Run NPM RUN BUILD
+        --- Now after doing the above setup, we have to performt the NPM RUN BUILD to rebuild our application.
+        --- After the successfull build , you will see "Prerendered 3 static routes.".
+        --- Build shows how many static routes are pre-rendered.
+        --- 3 ==> The default path which hold empty i.e "''" path and two new paths that we have introduced in user-routes.txt.
+
+        4) Validate the changes inside index.html under a "browser" folder inside "dist/APP_NAME"
+        --- Now you will see the two new index.html got created under "users/u1/tasks" && "users/u2/tasks" folder.
+            --- Note ==> Users's folder is comes under a browser folder.
+        --- These index.html files of respective user are now holding a static pages of tasks .
+
+        --> Need to check
+        --- How Angular adds these index.html for different paths ? Why it should not add everything inside a single/root index.html ?
+
+    --- That's how Angular does executes components that were required for thsese paths during the build process and it pre-render the pages.
+    --- By following above process you can do pre-rendering for all of your pages and make all the pages working statically.
+    --- And in that case you can simply deploy the "browser" folder to web host.
+    --- And If you are having mixture of pre-render aoages and dyanmically rendered pages then you can you deploy both "browser" and "server"
+
+
+    // SSR & SSG Deployment Example
+
+   --- When deploying Angular applications that need to run code on the server (i.e., SSR apps or SSG + SSR apps), you need a hosting provider that allows you do that. A static host (which only serves static files but doesn't run any code on the server) does NOT suffice.
+   --- When it comes to deploying Angular apps, Firebase' "App Hosting" service can be a great choice: https://firebase.google.com/docs/app-hosting.
+   --- Firebase, like Angular, is developed by Google. Therefore, deploying an Angular app via Firebase App Hosting is relatively straightforward. 
+   --- You can follow the steps outlined in the official documentation: https://firebase.google.com/docs/app-hosting/get-started
+
+   // Reference
+   https://www.youtube.com/watch?v=7_SzJnZy_kg 
+   https://www.youtube.com/watch?v=fW47YBjNI6o
+   
+
+
+
+
+
+    */
 
 
 
